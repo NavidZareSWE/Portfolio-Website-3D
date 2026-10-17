@@ -6,7 +6,7 @@
  *
  *   npm run i18n:push                      compare with i18nexus, list the changes, ask, upload
  *   npm run i18n:push -- --dry-run         only list the changes
- *   npm run i18n:push -- ui about          only these namespaces
+ *   npm run i18n:push -- about home        only these namespaces
  *   npm run i18n:push -- --yes             do not ask (for scripts)
  *
  * Needs, in .env or the environment:
@@ -25,6 +25,9 @@
  * i18nexus are listed so they can be removed in the i18nexus dashboard.
  * Imports run asynchronously on i18nexus, so after each one the script downloads the
  * namespace again until it matches the local file (or reports what still differs).
+ *
+ * Namespaces in LOCAL_ONLY_NAMESPACES are never uploaded: they are committed in the
+ * repository instead (`ui` would put the i18nexus project over its plan's string limit).
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -43,6 +46,8 @@ const IMPORT_GAP_MS = 12_500;
 const VERIFY_TIMEOUT_MS = 90_000;
 const VERIFY_INTERVAL_MS = 3_000;
 const LIST_LIMIT = 12;
+/** Committed in the repository (see .gitignore), never uploaded to i18nexus. */
+const LOCAL_ONLY_NAMESPACES = ["ui"];
 
 /* ------------------------------------------------------------------ */
 /* Setup                                                              */
@@ -129,15 +134,28 @@ function readJson(file) {
   }
 }
 
-/** Flattens nested objects and arrays to dot paths: { a: { b: ["x"] } } -> { "a.b.0": "x" }. */
+/**
+ * Flattens nested objects and arrays to readable paths that keep the structure:
+ * { a: { b: ["x"] } } -> { "a.b[0]": "x" }, and a flat key { "a.b": "x" } -> { '["a.b"]': "x" },
+ * so an import that comes back flattened, or with arrays turned into objects, counts as different.
+ */
 function flatten(value, prefix = "", out = {}) {
   if (value !== null && typeof value === "object") {
-    const entries = Array.isArray(value)
+    const isArray = Array.isArray(value);
+    const entries = isArray
       ? value.map((v, i) => [String(i), v])
       : Object.entries(value);
     if (entries.length === 0 && prefix) out[prefix] = value;
-    for (const [key, child] of entries)
-      flatten(child, prefix ? `${prefix}.${key}` : key, out);
+    for (const [key, child] of entries) {
+      const segment = isArray
+        ? `[${key}]`
+        : key.includes(".")
+          ? `[${JSON.stringify(key)}]`
+          : prefix
+            ? `.${key}`
+            : key;
+      flatten(child, prefix + segment, out);
+    }
   } else {
     out[prefix] = value;
   }
@@ -216,7 +234,26 @@ const missingSelected = onlyNamespaces.filter(
 );
 if (missingSelected.length > 0)
   fail(`No local files for: ${missingSelected.join(", ")}`);
-const namespaces = onlyNamespaces.length > 0 ? onlyNamespaces : localNamespaces;
+const localOnlySelected = onlyNamespaces.filter((ns) =>
+  LOCAL_ONLY_NAMESPACES.includes(ns),
+);
+if (localOnlySelected.length > 0) {
+  fail(
+    `${localOnlySelected.join(", ")} is kept in the repository, not in i18nexus ` +
+      "(see LOCAL_ONLY_NAMESPACES). Commit the JSON instead.",
+  );
+}
+const namespaces = (
+  onlyNamespaces.length > 0 ? onlyNamespaces : localNamespaces
+).filter((ns) => !LOCAL_ONLY_NAMESPACES.includes(ns));
+const skipped = localNamespaces.filter((ns) =>
+  LOCAL_ONLY_NAMESPACES.includes(ns),
+);
+if (onlyNamespaces.length === 0 && skipped.length > 0) {
+  console.log(
+    `[i18n:push] skipping ${skipped.join(", ")} (kept in the repository, not in i18nexus)`,
+  );
+}
 
 const local = {};
 for (const lng of languages) {

@@ -136,9 +136,12 @@ output/*
 **/output
 test*.py
 
-# Translations: i18nexus is the source of truth. `i18nexus pull` downloads them
-# (dev/build/start run it first); upload edits with `npm run i18n:push`.
-/locales/
+# Translations: `i18nexus pull` downloads them (dev/build/start run it first);
+# upload edits with `npm run i18n:push`. `ui` is the exception: it is committed,
+# because adding it to i18nexus would exceed the plan's string limit.
+# (Files, not the folder, are ignored, so the "!" rule below can re-include ui.json.)
+/locales/**/*.json
+!/locales/*/ui.json
 
 
 # ==============================================================================

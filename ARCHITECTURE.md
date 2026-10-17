@@ -111,8 +111,8 @@ Five generated GLB tiers are listed in `character/modelTiers.generated.json`. In
 ## Internationalisation
 
 - Each namespace has one JSON file per language: `locales/<lng>/<ns>.json`. The namespaces are `ui`, `common`, `home`, `about`, `projects`, `skills`, `experience` and `contactus`.
-- `npm run dev`, `build` and `start` each run `i18nexus pull` first, which needs `I18NEXUS_API_KEY`. Six namespaces come from i18nexus and are not committed. `ui` and `experience` are not in the i18nexus project, so they are committed in `locales/` instead.
-- During server rendering (and so during the build), `initTranslations` throws if any namespace file is missing for either language. A missing file therefore fails the build instead of showing raw keys.
+- `npm run dev`, `build` and `start` each run `i18nexus pull` first, which needs `I18NEXUS_API_KEY`. Seven namespaces come from i18nexus and are not committed; edits to them are uploaded with `npm run i18n:push`. `ui` is committed in `locales/` instead, because adding it to i18nexus would exceed the plan's string limit, so the i18nexus project must not contain a `ui` namespace.
+- During server rendering (and so during the build), `initTranslations` throws if any namespace file is missing or empty for either language. Such a file therefore fails the build instead of showing raw keys.
 - React reads copy with `useTranslation`. Text inside the WebGL world (card faces, scene signs) is built into `SceneLabels` by `ExperienceClient`, and the world is rebuilt when the language changes.
 - Direction comes from i18next (`i18n.dir`) and from `src/i18n/isTextDirectionRTL.ts`. Persian text in canvas textures uses the Vazirmatn font.
 - HTML snippets from the locale files are sanitised with DOMPurify (`components/ui/RichText.tsx`). External links open in a new tab, and links to the hosts in `content/links.ts` `OFFLINE_HOSTS` are rendered without an `href`.
@@ -137,6 +137,7 @@ These are not part of the runtime bundle:
 | Path                    | Purpose                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `scripts/dev.mjs`       | Wraps `next dev`. Maps `--lod`, `--gpu` and `--net` to the `NEXT_PUBLIC_DEV_*` variables.                                                   |
+| `scripts/i18n-push.mjs` | Uploads changed `locales/` namespaces to i18nexus (`npm run i18n:push`) and checks the result. Skips `ui`, which is committed. |
 | `scripts/character/`    | Python procedural generator for the character GLBs, the glyph-figure GLB, the rig module and the tier manifest.                             |
 | `scripts/mask/`         | Python script that turns the mask reference image into the two mask textures.                                                               |
 | `tools/fast-glob-shim/` | Local replacement for `fast-glob` (backed by `tinyglobby`), wired through `package.json` `overrides` (see the README's "Dependency audit"). |

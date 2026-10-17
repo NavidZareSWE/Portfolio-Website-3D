@@ -46,7 +46,7 @@ Only `I18NEXUS_API_KEY` is required (the scripts download the translations). The
 | ------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `NEXT_PUBLIC_SITE_URL`                                              | `src/app/[locale]/layout.tsx`                                    | Sets `metadataBase` for absolute metadata URLs. Unset: no `metadataBase`.                                                                  |
 | `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY`                                  | `src/components/ui/SectionContent.tsx`                           | Contact form posts to Web3Forms. Unset: Send opens the visitor's email app instead.                                                        |
-| `I18NEXUS_API_KEY`                                                  | `i18nexus-cli` (`npm run dev`, `build`, `start` and `i18n:pull`) | **Required.** Downloads the i18nexus namespaces into `locales/` (only `ui` and `experience` are committed). Not part of the client bundle. |
+| `I18NEXUS_API_KEY`                                                  | `i18nexus-cli` (`npm run dev`, `build`, `start` and `i18n:pull`) | **Required.** Downloads the i18nexus namespaces into `locales/` (only `ui` is committed). Not part of the client bundle.                  |
 | `NEXT_PUBLIC_DEV_LOD`, `NEXT_PUBLIC_DEV_GPU`, `NEXT_PUBLIC_DEV_NET` | `src/three/quality/devOverrides.ts`                              | Development-only overrides, set by `scripts/dev.mjs` from `--lod/--gpu/--net`. Ignored when `NODE_ENV` is not `development`.               |
 
 `NEXT_PUBLIC_*` values are inlined into the client bundle at build time, so they must never hold secrets.
@@ -103,6 +103,7 @@ src/
                           glyph figures (GlyphFigure + poses), merged props (PropKit), vignettes/
 locales/{en,fa}/*.json   ALL copy, one file per i18next namespace
 scripts/dev.mjs           `npm run dev` wrapper (development-only --lod/--gpu/--net switches)
+scripts/i18n-push.mjs     `npm run i18n:push`: uploads edited locales/ JSON to i18nexus (skips ui)
 scripts/character/        procedural sculpt of the character (SDF to mesh to GLB)
 scripts/mask/             turns the Anonymous mask reference image into the two mask textures
 tools/fast-glob-shim/     dependency override for the linter (see "Dependency audit")
@@ -127,15 +128,17 @@ Namespaces in `locales/{en,fa}/`:
 | --------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------- |
 | `common`, `home`, `projects`, `skills`, `contactus` | Shared with the main site                                                      | i18nexus (`i18nexus pull`)       |
 | `about`                                             | The About copy from the main site                                              | i18nexus (`i18nexus pull`)       |
-| `experience`                                        | Work history and education from the résumés                                    | **Committed** in this repository |
+| `experience`                                        | Work history and education from the résumés                                    | i18nexus (`i18nexus pull`)       |
 | `ui`                                                | Text for this site only: HUD, prompts, loading screen, card faces, world signs | **Committed** in this repository |
 
 **Where the translation files come from.** `npm run dev`, `npm run build` and `npm start` each run `i18nexus pull` first. The pull downloads every namespace of the i18nexus project into `locales/<lng>/<ns>.json`. `npm run i18n:pull` runs the pull on its own.
 
-- `.gitignore` ignores the JSON files in `locales/`, except `ui.json` and `experience.json`, which are committed. Those two namespaces were written for this site and are not in the i18nexus project, so the pull can never download them. Before they were committed, a fresh clone (such as a Vercel build) had no `ui.json`, and the HUD showed raw keys such as `hud.index`.
-- The pull only writes the namespaces i18nexus has and never deletes files, so the committed files are left alone. If `ui` or `experience` is added to i18nexus later, the pull overwrites the committed copy with the i18nexus version.
+- **`ui` is committed, everything else comes from i18nexus.** `.gitignore` ignores the JSON files in `locales/` except `ui.json`. Adding `ui` (119 strings per language) to i18nexus would put the project over its plan's string limit (the import is refused with HTTP 403), so `ui` lives in the repository instead.
+- **The i18nexus project must not have a `ui` namespace**, not even an empty one. The pull writes every namespace it gets, so an empty `ui` in i18nexus would overwrite the committed `ui.json` with `{}` and the site would show raw keys such as `hud.index`.
+- **Changing text in the other namespaces:** edit the JSON, then run `npm run i18n:push` (`scripts/i18n-push.mjs`) **before** `dev`, `build` or `start`, because their pull overwrites unpushed edits. `--dry-run` lists the differences without sending anything. The script skips `ui` (`LOCAL_ONLY_NAMESPACES`) and needs `I18NEXUS_PERSONAL_ACCESS_TOKEN` (import strings, create namespaces) in `.env`; Vercel does not need it.
+- **Changing text in `ui`:** edit `locales/<lng>/ui.json` and commit it.
 - `I18NEXUS_API_KEY` must be set wherever these scripts run: in `.env` locally, and in the hosting provider's environment variables (Vercel: Production and Preview). Without it the pull stops with "required option '-k, --api-key <apiKey>' not specified", and the build fails.
-- **Build check.** `src/i18n/initTranslations.ts` checks that all eight namespaces exist for both languages. If a file is missing, the build fails and lists it, for example `Missing translation files: locales/en/ui.json`, instead of deploying raw keys. A missing file still works on a machine that has an old local copy but fails on a fresh clone. To reproduce a fresh clone, move `locales/` aside, restore the two committed namespaces with `git checkout -- locales`, and run `npm run build`.
+- **Build check.** `src/i18n/initTranslations.ts` checks that all eight namespaces exist and are not empty, for both languages. Otherwise the build fails and lists the files, for example `Missing or empty translation files: locales/en/ui.json`, instead of deploying raw keys. To reproduce a fresh clone (as on Vercel), move `locales/` aside, restore `ui.json` with `git checkout -- locales`, and run `npm run build`.
 - Pages are pre-rendered at build time, so the pull in `npm start` does not change what is served. It only refreshes `locales/` on disk.
 
 The contact form posts to Web3Forms, like the main site. Set `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY`. Without it the form still works: Send opens the visitor's email app with the message, name and address filled in, addressed to the contact email.
