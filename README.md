@@ -1,4 +1,6 @@
 # NZSWE — Interactive 3D Portfolio
+![NZSWE — Interactive 3D Portfolio](https://res.cloudinary.com/dyjew8iji/image/upload/v1792251604/nzswe-banner-3000x1000_2x_s1akab.png)
+
 
 An explorable ASCII-cyberpunk world. A hooded hacker walks between holographic cards. Holding **Space** next to a card opens that portfolio section.
 
