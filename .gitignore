@@ -273,3 +273,4 @@ __marimo__/
 /locales/**/*.json
 !/locales/*/ui.json
 !/locales/*/experience.json
+!/locales/*/about.json
