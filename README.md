@@ -29,12 +29,12 @@ npm run build && npm start
 
 ## Verification
 
-| Command | What it checks |
-|---|---|
-| `npm run lint` | ESLint (`eslint-config-next` core-web-vitals and TypeScript rules) |
+| Command            | What it checks                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `npm run lint`     | ESLint (`eslint-config-next` core-web-vitals and TypeScript rules)                                            |
 | `npx tsc --noEmit` | Type checking with the project's TypeScript (there is no npm script for it; `npm run build` also type-checks) |
-| `npm run build` | Production build and static generation of `/en` and `/fa` |
-| `npm audit` | Dependency advisories (see "Dependency audit") |
+| `npm run build`    | Production build and static generation of `/en` and `/fa`                                                     |
+| `npm audit`        | Dependency advisories (see "Dependency audit")                                                                |
 
 The repository has no automated unit, integration or end-to-end test suite.
 
@@ -42,12 +42,12 @@ The repository has no automated unit, integration or end-to-end test suite.
 
 Only `I18NEXUS_API_KEY` is required (the scripts download the translations). The others are optional:
 
-| Variable | Read by | Effect |
-|---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | `src/app/[locale]/layout.tsx` | Sets `metadataBase` for absolute metadata URLs. Unset: no `metadataBase`. |
-| `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` | `src/components/ui/SectionContent.tsx` | Contact form posts to Web3Forms. Unset: Send opens the visitor's email app instead. |
-| `I18NEXUS_API_KEY` | `i18nexus-cli` (`npm run dev`, `build`, `start` and `i18n:pull`) | **Required.** Downloads the i18nexus namespaces into `locales/` (only `ui` and `experience` are committed). Not part of the client bundle. |
-| `NEXT_PUBLIC_DEV_LOD`, `NEXT_PUBLIC_DEV_GPU`, `NEXT_PUBLIC_DEV_NET` | `src/three/quality/devOverrides.ts` | Development-only overrides, set by `scripts/dev.mjs` from `--lod/--gpu/--net`. Ignored when `NODE_ENV` is not `development`. |
+| Variable                                                            | Read by                                                          | Effect                                                                                                                                     |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SITE_URL`                                              | `src/app/[locale]/layout.tsx`                                    | Sets `metadataBase` for absolute metadata URLs. Unset: no `metadataBase`.                                                                  |
+| `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY`                                  | `src/components/ui/SectionContent.tsx`                           | Contact form posts to Web3Forms. Unset: Send opens the visitor's email app instead.                                                        |
+| `I18NEXUS_API_KEY`                                                  | `i18nexus-cli` (`npm run dev`, `build`, `start` and `i18n:pull`) | **Required.** Downloads the i18nexus namespaces into `locales/` (only `ui` and `experience` are committed). Not part of the client bundle. |
+| `NEXT_PUBLIC_DEV_LOD`, `NEXT_PUBLIC_DEV_GPU`, `NEXT_PUBLIC_DEV_NET` | `src/three/quality/devOverrides.ts`                              | Development-only overrides, set by `scripts/dev.mjs` from `--lod/--gpu/--net`. Ignored when `NODE_ENV` is not `development`.               |
 
 `NEXT_PUBLIC_*` values are inlined into the client bundle at build time, so they must never hold secrets.
 
@@ -67,15 +67,15 @@ In development the browser console prints which model was loaded, why, and what 
 
 ## Controls
 
-| Input | Action |
-|---|---|
-| W A S D / arrows | Move (screen-relative, diagonals normalised) |
-| Shift (held) | Sprint: 1.6× speed, same animation (`PLAYER.sprintMultiplier`); shown on the guide's bottom row next to Space |
-| DETAIL button | Player model detail: Auto or one of five tiers (saved in this browser) |
-| Space | Jump (when no card is nearby) |
-| Hold Space near a card | Open that section (never jumps) |
-| Esc / close button | Return to the world (same position) |
-| Index button | Open any section directly (keyboard and screen-reader friendly) |
+| Input                  | Action                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| W A S D / arrows       | Move (screen-relative, diagonals normalised)                                                                  |
+| Shift (held)           | Sprint: 1.6× speed, same animation (`PLAYER.sprintMultiplier`); shown on the guide's bottom row next to Space |
+| DETAIL button          | Player model detail: Auto or one of five tiers (saved in this browser)                                        |
+| Space                  | Jump (when no card is nearby)                                                                                 |
+| Hold Space near a card | Open that section (never jumps)                                                                               |
+| Esc / close button     | Return to the world (same position)                                                                           |
+| Index button           | Open any section directly (keyboard and screen-reader friendly)                                               |
 
 Touch-only devices get a virtual stick and an action button.
 
@@ -123,12 +123,12 @@ The site is bilingual (Persian and English) and uses the same i18next setup as t
 
 Namespaces in `locales/{en,fa}/`:
 
-| Namespace | Content | Where it comes from |
-|---|---|---|
-| `common`, `home`, `projects`, `skills`, `contactus` | Shared with the main site | i18nexus (`i18nexus pull`) |
-| `about` | The About copy from the main site | i18nexus (`i18nexus pull`) |
-| `experience` | Work history and education from the résumés | **Committed** in this repository |
-| `ui` | Text for this site only: HUD, prompts, loading screen, card faces, world signs | **Committed** in this repository |
+| Namespace                                           | Content                                                                        | Where it comes from              |
+| --------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------- |
+| `common`, `home`, `projects`, `skills`, `contactus` | Shared with the main site                                                      | i18nexus (`i18nexus pull`)       |
+| `about`                                             | The About copy from the main site                                              | i18nexus (`i18nexus pull`)       |
+| `experience`                                        | Work history and education from the résumés                                    | **Committed** in this repository |
+| `ui`                                                | Text for this site only: HUD, prompts, loading screen, card faces, world signs | **Committed** in this repository |
 
 **Where the translation files come from.** `npm run dev`, `npm run build` and `npm start` each run `i18nexus pull` first. The pull downloads every namespace of the i18nexus project into `locales/<lng>/<ns>.json`. `npm run i18n:pull` runs the pull on its own.
 
@@ -156,13 +156,13 @@ The generator meshes each part on its own animation pivot, bakes ambient occlusi
 
 Triangle budgets are set per part (`PART_SCALE` in the generator); the hood and shoes keep more detail than the fabric surfaces. There are five detail tiers with the same parts and pivots, so any of them drives the same rig and can be swapped at runtime:
 
-| Tier | File | Triangles | Size (raw / gzip) | Build settings |
-|---|---|---|---|---|
-| very-low | `hacker-very-low.glb` | 24.6k | 0.66 / 0.31 MB | 14% of medium (sneakers 50%) |
-| low | `hacker-low.glb` | 39.4k | 1.05 / 0.53 MB | 30% of medium (sneakers full) |
-| medium | `hacker.glb` | 64.3k | 1.69 / 0.93 MB | the original model |
-| high | `hacker-high.glb` | 130k | 3.40 / 1.99 MB | 1.5× the authored budget, 0.85× voxel size |
-| super | `hacker-super.glb` | 294k | 7.66 / 4.42 MB | 3.5× the authored budget, 0.65× voxel size |
+| Tier     | File                  | Triangles | Size (raw / gzip) | Build settings                             |
+| -------- | --------------------- | --------- | ----------------- | ------------------------------------------ |
+| very-low | `hacker-very-low.glb` | 24.6k     | 0.66 / 0.31 MB    | 14% of medium (sneakers 50%)               |
+| low      | `hacker-low.glb`      | 39.4k     | 1.05 / 0.53 MB    | 30% of medium (sneakers full)              |
+| medium   | `hacker.glb`          | 64.3k     | 1.69 / 0.93 MB    | the original model                         |
+| high     | `hacker-high.glb`     | 130k      | 3.40 / 1.99 MB    | 1.5× the authored budget, 0.85× voxel size |
+| super    | `hacker-super.glb`    | 294k      | 7.66 / 4.42 MB    | 3.5× the authored budget, 0.65× voxel size |
 
 ```bash
 pip install -r scripts/character/requirements.txt
@@ -190,12 +190,12 @@ The NZSWE emblem is extruded at runtime from `public/logo/nzswe-logo.svg`, the s
 
 Every scene is drawn in the same glyph language as the floor and blocks: surfaces are grids of characters from the shared atlas, shaded by a fixed key light, with a cyan silhouette line on figures and the brand green reserved for the "story" objects (phone, guitar sound hole, screens, roof blocks). Figures are glyph copies of the hacker, posed by joint targets (`world/poses.ts`).
 
-| Card | Scene beside it |
-|---|---|
-| Projects | Construction site. The hacker operates a tower crane from its cab, swinging blocks from the stock pile onto the roof of a building under construction; the floor resets when complete. |
-| Skills | Two-monitor desk. He types in bursts while green code rains down both screens. |
-| Contact | On a couch, legs crossed, corded phone at the hood, head tilted, foot tapping; "CALLING…" pulses and rings leave the phone. |
-| About | Guitar on an amp (notes float up), freestyle laps in a pool, and drawing the N logo on an easel canvas (wiped and redrawn). |
+| Card       | Scene beside it                                                                                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Projects   | Construction site. The hacker operates a tower crane from its cab, swinging blocks from the stock pile onto the roof of a building under construction; the floor resets when complete.      |
+| Skills     | Two-monitor desk. He types in bursts while green code rains down both screens.                                                                                                              |
+| Contact    | On a couch, legs crossed, corded phone at the hood, head tilted, foot tapping; "CALLING…" pulses and rings leave the phone.                                                                 |
+| About      | Guitar on an amp (notes float up), freestyle laps in a pool, and drawing the N logo on an easel canvas (wiped and redrawn).                                                                 |
 | Experience | Three hackers in Anonymous masks type at a table; one seat is empty. When you first come close, the hacker walks in, sits, puts on the mask and starts typing. Walk far away and it resets. |
 
 Figures and their furniture are 1.5x the player (`SCENES.npcScale` in `three/config.ts`) and stay smaller than the cards. Characters and the furniture around them have no collider: you can walk through them. When the crane finishes the roof, the six blocks dissolve with the same glyph fade before construction starts over; they stay solid underfoot until fully faded.
@@ -240,14 +240,14 @@ In the CPU-only test browser here, at 1440×900, one frame at spawn went from ab
 
 ## Measured load (production build, this machine)
 
-| Item | Size |
-|---|---|
-| JavaScript (all chunks, gzip) | about 400 KB, of which about 205 KB is Three.js |
-| Player model `hacker.glb` | 1.65 MB raw, about 0.92 MB gzip |
-| Other player tiers | see the tier table under "Regenerating the character"; only one tier is downloaded per visit unless the visitor switches |
-| Glyph-figure model `hacker-glyph.glb` | 0.20 MB raw, about 0.10 MB gzip (6.8k triangles) |
-| Per frame, start view (1280×800) | 55 draw calls (including the floor's field pass), about 87k triangles |
-| Per frame, busiest view measured (Experience table with the About scenes also in frame) | 288 draw calls, about 214k triangles |
+| Item                                                                                    | Size                                                                                                                     |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| JavaScript (all chunks, gzip)                                                           | about 400 KB, of which about 205 KB is Three.js                                                                          |
+| Player model `hacker.glb`                                                               | 1.65 MB raw, about 0.92 MB gzip                                                                                          |
+| Other player tiers                                                                      | see the tier table under "Regenerating the character"; only one tier is downloaded per visit unless the visitor switches |
+| Glyph-figure model `hacker-glyph.glb`                                                   | 0.20 MB raw, about 0.10 MB gzip (6.8k triangles)                                                                         |
+| Per frame, start view (1280×800)                                                        | 55 draw calls (including the floor's field pass), about 87k triangles                                                    |
+| Per frame, busiest view measured (Experience table with the About scenes also in frame) | 288 draw calls, about 214k triangles                                                                                     |
 
 Frame rate was **not** measured on real hardware: the test browser here renders on a software GPU, so its numbers say nothing about real devices.
 
@@ -257,12 +257,12 @@ The maintenance pass on 2026-10-17 found the items below. They have no reference
 
 **Symbols with no references:**
 
-| Location | Symbol |
-|---|---|
-| `src/store/selectors.ts` | `selectNearbyCard` |
-| `src/three/world/Vignette.ts` | `themeColor` |
-| `src/three/world/poses.ts` | `SEAT_HEIGHT`, `DESK_HEIGHT`, `STAND_REACH` |
-| `src/types/index.ts` | `isSectionId` |
+| Location                      | Symbol                                      |
+| ----------------------------- | ------------------------------------------- |
+| `src/store/selectors.ts`      | `selectNearbyCard`                          |
+| `src/three/world/Vignette.ts` | `themeColor`                                |
+| `src/three/world/poses.ts`    | `SEAT_HEIGHT`, `DESK_HEIGHT`, `STAND_REACH` |
+| `src/types/index.ts`          | `isSectionId`                               |
 
 **Exported, but only used inside their own file.** The code is active; only the `export` keyword is unused.
 

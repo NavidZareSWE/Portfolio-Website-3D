@@ -57,7 +57,9 @@ export default async function initTranslations(
   if (!resources) {
     const loaded = i18nInstance.services.resourceStore.data;
     const missing = i18nConfig.locales.flatMap((lng) =>
-      namespaces.filter((ns) => !loaded[lng]?.[ns]).map((ns) => `locales/${lng}/${ns}.json`),
+      namespaces
+        .filter((ns) => !loaded[lng]?.[ns])
+        .map((ns) => `locales/${lng}/${ns}.json`),
     );
     if (missing.length > 0) {
       throw new Error(
@@ -69,7 +71,9 @@ export default async function initTranslations(
 
   return {
     i18n: i18nInstance,
-    resources: { [locale]: i18nInstance.services.resourceStore.data[locale] } as Resource,
+    resources: {
+      [locale]: i18nInstance.services.resourceStore.data[locale],
+    } as Resource,
     t: i18nInstance.t,
   };
 }

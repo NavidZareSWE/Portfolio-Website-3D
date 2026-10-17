@@ -6,11 +6,7 @@
       {
         "title": "ARPut Main Website — Development & Maintenance",
         "period": "2024 – Present",
-        "org": [
-          "ARPut",
-          "Front-End Developer",
-          "Shiraz, Iran"
-        ],
+        "org": ["ARPut", "Front-End Developer", "Shiraz, Iran"],
         "site": {
           "label": "ARput.com"
         },
@@ -24,11 +20,7 @@
       {
         "title": "ARPutMarket — AR E-Commerce Platform",
         "period": "2024 – Present",
-        "org": [
-          "ARPut",
-          "Front-End Developer",
-          "Next.js"
-        ],
+        "org": ["ARPut", "Front-End Developer", "Next.js"],
         "site": {
           "label": "ARputmarket.com"
         },
@@ -72,9 +64,7 @@
       {
         "title": "B.Sc. — Computer Engineering (Software)",
         "period": "2020 – 2025",
-        "org": [
-          "Islamic Azad University, Shiraz"
-        ],
+        "org": ["Islamic Azad University, Shiraz"],
         "href": "https://shiraz.iau.ir/en",
         "points": [
           "Graduated among the top students of the class.",

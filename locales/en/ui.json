@@ -108,22 +108,8 @@
     "name": "NAME",
     "class": "CLASS",
     "tagline": {
-      "about": [
-        "WHOAMI",
-        "FULL-STACK",
-        "REACT",
-        "NEXT.JS",
-        "NODE.JS",
-        "///"
-      ],
-      "projects": [
-        "8 BUILDS",
-        "=",
-        "FULL-STACK",
-        "FRONT-END",
-        "AR",
-        "///"
-      ],
+      "about": ["WHOAMI", "FULL-STACK", "REACT", "NEXT.JS", "NODE.JS", "///"],
+      "projects": ["8 BUILDS", "=", "FULL-STACK", "FRONT-END", "AR", "///"],
       "skills": [
         "REACT",
         "NEXT.JS",
@@ -140,14 +126,7 @@
         "NOW",
         "///"
       ],
-      "contact": [
-        "EMAIL",
-        "GITHUB",
-        "LINKEDIN",
-        "TELEGRAM",
-        "SHIRAZ",
-        "///"
-      ]
+      "contact": ["EMAIL", "GITHUB", "LINKEDIN", "TELEGRAM", "SHIRAZ", "///"]
     }
   },
   "world": {
