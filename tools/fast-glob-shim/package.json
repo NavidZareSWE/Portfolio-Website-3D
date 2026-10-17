@@ -1,0 +1,11 @@
+{
+  "name": "fast-glob",
+  "version": "3.3.3-tinyglobby",
+  "description": "Drop-in for the fast-glob calls made by @next/eslint-plugin-next, backed by tinyglobby (no braces/micromatch dependency). See README > Dependency audit.",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "tinyglobby": "^0.2.17"
+  }
+}

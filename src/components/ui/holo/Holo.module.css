@@ -1,0 +1,197 @@
+/* Holo-terminal primitives. Mirrors the in-world card texture (cardTexture.ts):
+   deep glass fill, hairline cyan rule, corner brackets, `// 0X` header,
+   glyph divider, scanlines and the luminous progress track. */
+
+.frame {
+  --bracket: 14px;
+  --pad: 22px;
+  position: relative;
+  padding: var(--pad);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(10, 32, 64, 0.55),
+      rgba(6, 18, 40, 0.35) 55%,
+      rgba(8, 26, 56, 0.5)
+    ),
+    var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px rgba(95, 240, 255, 0.04),
+    0 0 24px rgba(42, 140, 255, 0.14),
+    inset 0 0 22px rgba(95, 240, 255, 0.05);
+  backdrop-filter: blur(10px);
+  color: var(--text);
+}
+
+.compact {
+  --bracket: 9px;
+  --pad: 10px 14px;
+}
+
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(95, 240, 255, 0.035) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: screen;
+}
+
+.bracket {
+  position: absolute;
+  width: var(--bracket);
+  height: var(--bracket);
+  border-color: var(--cyan);
+  border-style: solid;
+  border-width: 0;
+  filter: drop-shadow(0 0 4px rgba(95, 240, 255, 0.7));
+  pointer-events: none;
+}
+
+.tl {
+  top: -1px;
+  left: -1px;
+  border-top-width: 2px;
+  border-left-width: 2px;
+  border-top-left-radius: 6px;
+}
+.tr {
+  top: -1px;
+  right: -1px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+  border-top-right-radius: 6px;
+}
+.bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+  border-bottom-left-radius: 6px;
+}
+.br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+  border-bottom-right-radius: 6px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: rgba(140, 230, 255, 0.85);
+  margin-bottom: 8px;
+}
+
+.code {
+  color: var(--muted);
+}
+
+.rule {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  color: rgba(95, 240, 255, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+}
+
+.track {
+  position: relative;
+  display: block;
+  height: 8px;
+  border: 1.5px solid rgba(95, 240, 255, 0.55);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  inset: 1.5px;
+  border-radius: 2px;
+  background: var(--cyan);
+  box-shadow: 0 0 10px rgba(95, 240, 255, 0.9);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 14px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    border-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out);
+}
+
+.button::before,
+.button::after {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+.button::before {
+  content: "[";
+}
+
+.button::after {
+  content: "]";
+}
+
+.button:hover {
+  border-color: var(--line-strong);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(95, 240, 255, 0.22);
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Constrained devices (no GPU, or the render scale had to drop; set by the
+   Experience on <html>): blurring the live canvas behind every panel is
+   re-done each frame on the CPU, so panels go solid instead. */
+:global(html[data-quality="low"]) .frame,
+:global(html[data-quality="low"]) .button {
+  backdrop-filter: none;
+  background-color: var(--panel-solid);
+}
+
+/* Narrow phones: three HUD buttons share one row with the brand mark. */
+@media (max-width: 480px) {
+  .button {
+    padding: 8px 9px;
+    letter-spacing: 0.06em;
+    gap: 4px;
+  }
+}

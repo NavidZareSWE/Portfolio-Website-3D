@@ -1,0 +1,27 @@
+{
+  "very-low": {
+    "file": "hacker-very-low.glb",
+    "triangles": 24586,
+    "bytes": 663136
+  },
+  "low": {
+    "file": "hacker-low.glb",
+    "triangles": 39442,
+    "bytes": 1046972
+  },
+  "medium": {
+    "file": "hacker.glb",
+    "triangles": 64298,
+    "bytes": 1693300
+  },
+  "high": {
+    "file": "hacker-high.glb",
+    "triangles": 129880,
+    "bytes": 3396448
+  },
+  "super": {
+    "file": "hacker-super.glb",
+    "triangles": 294274,
+    "bytes": 7661972
+  }
+}

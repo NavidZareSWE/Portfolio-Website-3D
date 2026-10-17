@@ -1,0 +1,50 @@
+{
+  "name": "nzswe-3d-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "i18nexus pull &&  node scripts/dev.mjs",
+    "build": "i18nexus pull &&  next build",
+    "start": "i18nexus pull &&  next start",
+    "lint": "eslint",
+    "i18n:pull": "i18nexus pull",
+    "remove-dotGit": "rm -rf .git",
+    "init-struct": "bash createDirs.sh",
+    "pretty": "npx prettier . --write",
+    "check-update": "npx npm-check-updates",
+    "update-patch": "npx npm-check-updates --upgrade --target patch",
+    "update-minor": "npx npm-check-updates --upgrade --target minor",
+    "update": "npx npm-check-updates --upgrade"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource-variable/vazirmatn": "^5.3.0",
+    "@fontsource/press-start-2p": "^5.3.0",
+    "@reduxjs/toolkit": "^2.13.0",
+    "dompurify": "^3.4.17",
+    "i18next": "^25.10.10",
+    "i18next-resources-to-backend": "^1.2.3",
+    "next": "16.4.2",
+    "next-i18n-router": "^5.5.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-i18next": "^16.6.6",
+    "react-redux": "^9.3.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.186.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.2",
+    "fast-glob": "file:./tools/fast-glob-shim",
+    "i18nexus-cli": "^3.8.3",
+    "typescript": "^5"
+  },
+  "overrides": {
+    "fast-glob": "$fast-glob"
+  }
+}

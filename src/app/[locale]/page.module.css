@@ -1,0 +1,18 @@
+.main {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.noscript {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  font-family: var(--font-mono);
+  color: var(--text);
+  background: var(--bg);
+}

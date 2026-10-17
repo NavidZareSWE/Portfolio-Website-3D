@@ -1,0 +1,203 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.open {
+  pointer-events: auto;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(3, 5, 10, 0) 0%,
+    rgba(3, 5, 10, 0.2) 45%,
+    rgba(3, 5, 10, 0.65) 100%
+  );
+}
+
+.open .scrim {
+  animation: fadeIn 420ms var(--ease-out) both;
+}
+
+.closing .scrim {
+  animation: fadeOut 260ms var(--ease-in) both;
+}
+
+/* `.root .panel` outranks the base HoloFrame rules it overrides. */
+.root .panel {
+  --pad: 24px 30px 32px;
+  --bracket: 18px;
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(calc(var(--panel-width) - 16px), calc(100vw - 32px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow:
+    0 0 0 1px rgba(95, 240, 255, 0.05),
+    0 0 40px rgba(42, 140, 255, 0.2),
+    -30px 0 60px rgba(0, 0, 0, 0.45);
+}
+
+.open .panel {
+  animation: projectIn 480ms var(--ease-out) both;
+}
+
+.closing .panel {
+  animation: projectOut 260ms var(--ease-in) both;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.index {
+  color: rgba(140, 230, 255, 0.9);
+}
+
+.hex {
+  color: var(--muted);
+}
+
+.close {
+  margin-left: auto;
+}
+
+.title {
+  margin-top: 22px;
+  font-family: var(--font-display);
+  font-size: clamp(34px, 6vw, 48px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e9fdff;
+  text-shadow: 0 0 22px rgba(95, 240, 255, 0.75);
+}
+
+.code {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: rgba(140, 220, 255, 0.8);
+}
+
+.summary {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.ascii {
+  margin: 22px 0 26px;
+  padding: 16px 18px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(60, 200, 255, 0.7);
+  border: 2px dashed rgba(42, 140, 255, 0.55);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.footer {
+  margin-top: 30px;
+  display: grid;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--blue);
+}
+
+@keyframes projectIn {
+  from {
+    opacity: 0;
+    transform: translateX(36px) scaleY(0.96);
+    filter: brightness(1.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes projectOut {
+  to {
+    opacity: 0;
+    transform: translateX(28px) scaleY(0.97);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 899px) {
+  /* Keep in sync with OVERLAY_SHEET_MAX_* in config/layout.ts (camera framing). */
+  .root .panel {
+    --pad: 18px 16px 24px;
+    top: auto;
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: auto;
+    max-height: min(62vh, 640px);
+  }
+
+  .scrim {
+    background: linear-gradient(
+      180deg,
+      rgba(3, 5, 10, 0) 10%,
+      rgba(3, 5, 10, 0.6) 100%
+    );
+  }
+}
+
+/* Keep a (near-instant) animation so animationend still fires and unmounts the panel. */
+@media (prefers-reduced-motion: reduce) {
+  .open .panel,
+  .closing .panel,
+  .open .scrim,
+  .closing .scrim {
+    animation-duration: 1ms;
+  }
+}
+
+/* The dialog receives programmatic focus on open; it is not a control, so no ring. */
+.root .panel:focus {
+  outline: none;
+}
+
+/* Persian: no tracking on display type, more leading for the script. */
+:lang(fa) .title {
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+:lang(fa) .summary {
+  line-height: 1.9;
+}

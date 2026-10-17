@@ -1,0 +1,196 @@
+.hud {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+  pointer-events: none;
+  transition: opacity 300ms var(--ease-out);
+  /* The HUD keeps its physical layout in both languages (brand left, menu right);
+     text inside follows the page direction. */
+  direction: ltr;
+}
+
+.actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.dimmed .actions {
+  pointer-events: none;
+}
+
+.dimmed {
+  opacity: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  width: 26px;
+  height: auto;
+  filter: invert(1) drop-shadow(0 0 8px rgba(95, 240, 255, 0.55));
+}
+
+.wordmark {
+  display: grid;
+  line-height: 1.15;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #e9fdff;
+  text-shadow: 0 0 14px rgba(95, 240, 255, 0.45);
+}
+
+.sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(140, 230, 255, 0.75);
+}
+
+/* Narrow phones: the two HUD buttons need the room; the tagline is decorative. */
+@media (max-width: 400px) {
+  .sub {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .hud {
+    gap: 8px;
+  }
+  .actions {
+    gap: 6px;
+  }
+}
+
+.index {
+  position: relative;
+  pointer-events: auto;
+}
+
+.dimmed .index {
+  pointer-events: none;
+}
+
+.menuWrap {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: min(300px, calc(100vw - 32px));
+}
+
+.menu {
+  --pad: 14px 10px 10px;
+}
+
+.menu ul {
+  list-style: none;
+  margin-top: 8px;
+}
+
+.menuItem {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  width: 100%;
+  text-align: start;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.menuItem:hover {
+  border-color: var(--line);
+  background: rgba(95, 240, 255, 0.06);
+}
+
+.menuIndex {
+  grid-row: span 2;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--cyan);
+  padding-top: 2px;
+}
+
+.menuTitle {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:lang(fa) .menuTitle {
+  letter-spacing: 0;
+}
+
+.language {
+  font-family: var(--font-display);
+}
+
+.menuSummary {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------- model detail menu */
+
+.menuItemSelected {
+  border-color: var(--line);
+  background: rgba(95, 240, 255, 0.08);
+}
+
+.menuItemSelected .menuIndex {
+  color: var(--green);
+}
+
+.detailNote {
+  margin-top: 8px;
+  padding: 0 8px 4px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Small pulsing square while a model downloads. */
+.detailBusy {
+  width: 6px;
+  height: 6px;
+  margin-inline-start: 6px;
+  background: var(--green);
+  animation: detailBusy 0.8s steps(2) infinite;
+}
+
+@keyframes detailBusy {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detailBusy {
+    animation: none;
+  }
+}

@@ -1,0 +1,181 @@
+/*
+ * Layout and proportions follow "Jagged wobbly effect.html" exactly, scaled
+ * from its 88 px key: 12 px gap, 28 px padding, 6 px border, 24 px radius,
+ * 4 px outer ring, 26 px pixel-font letters. Colours are mapped onto the
+ * world palette (reference accent → cyan, deep blue → dark teal).
+ */
+.guide {
+  --key: clamp(36px, 3.1vw, 50px);
+  --u: calc(var(--key) / 88);
+  --accent: var(--cyan);
+  /* Reference relation: key fill brighter than the pad, so the black hard shadow reads. */
+  --key-fill: #0f3d48;
+  --pad-fill: #0a1f26;
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: "Press Start 2P", var(--font-mono);
+  /* WASD is a physical key layout: never mirror it in right-to-left pages. */
+  direction: ltr;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 320ms var(--ease-out),
+    transform 320ms var(--ease-out);
+}
+
+.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.pad {
+  display: grid;
+  grid-template-columns: repeat(3, var(--key));
+  grid-template-rows: var(--key) var(--key) calc(var(--u) * 56);
+  gap: calc(var(--u) * 12);
+  padding: calc(var(--u) * 28);
+  background: var(--pad-fill);
+  border: calc(var(--u) * 6) solid var(--accent);
+  border-radius: calc(var(--u) * 24);
+  box-shadow:
+    0 0 0 calc(var(--u) * 4) var(--key-fill),
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    inset 0 0 40px rgba(0, 0, 0, 0.25);
+  transition: border-color 160ms var(--ease-out);
+}
+
+.key {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keyW {
+  grid-column: 2;
+  grid-row: 1;
+}
+.keyA {
+  grid-column: 1;
+  grid-row: 2;
+}
+.keyS {
+  grid-column: 2;
+  grid-row: 2;
+}
+.keyD {
+  grid-column: 3;
+  grid-row: 2;
+}
+.keyShift {
+  grid-column: 1;
+  grid-row: 3;
+}
+.keySpace {
+  grid-column: 2 / span 2;
+  grid-row: 3;
+}
+
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Hard shadow: same deforming path, offset (5, 5), no blur. */
+.shadow {
+  fill: #000;
+  opacity: 0.9;
+}
+
+.shape {
+  fill: var(--key-fill);
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linejoin: round;
+  transition:
+    fill 120ms var(--ease-out),
+    stroke 120ms var(--ease-out);
+}
+
+/* Sharp pixel letters: no glow, no smoothing tricks. */
+.label {
+  position: relative;
+  z-index: 2;
+  font-size: calc(var(--u) * 26);
+  line-height: 1;
+  color: #fff;
+}
+
+.keySpace .label {
+  font-size: calc(var(--u) * 16);
+  letter-spacing: 0.2em;
+  padding-left: 0.2em;
+}
+
+/* Five pixel-font letters inside one key's outline (inset 10 units each side). */
+.keyShift .label {
+  font-size: calc(var(--u) * 10.5);
+  letter-spacing: 0;
+}
+
+.active .shape {
+  fill: #11505a;
+  stroke: #c8fdff;
+}
+
+.active .label {
+  color: var(--cyan);
+}
+
+/* Next to a hologram, Space becomes the access key: brand green. */
+.accessReady .keySpace .shape {
+  stroke: var(--green);
+}
+
+.accessReady .keySpace .label {
+  color: var(--green);
+}
+
+.hint {
+  margin-top: 14px;
+  font-size: 9px;
+  /* Hard pixel shadow (as the reference heading) keeps it legible over glyphs. */
+  text-shadow:
+    2px 2px 0 #000,
+    -1px -1px 0 #000;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--muted);
+}
+
+.hintAccent {
+  color: var(--green);
+}
+
+/* Persian words inside the pixel-font hint (see withScript in WASDGuide.tsx). */
+.script {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  vertical-align: -1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide {
+    transition-duration: 1ms;
+    transform: none;
+  }
+}

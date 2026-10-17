@@ -1,0 +1,81 @@
+.controls {
+  /* Stick left, action button right in both languages. */
+  direction: ltr;
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 max(16px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms var(--ease-out);
+}
+
+.visible {
+  opacity: 1;
+}
+
+.visible .stick,
+.visible .action {
+  pointer-events: auto;
+}
+
+.stick {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: radial-gradient(
+    circle,
+    rgba(95, 240, 255, 0.08),
+    rgba(8, 20, 40, 0.55)
+  );
+  touch-action: none;
+  display: grid;
+  place-items: center;
+}
+
+.knob {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(22, 92, 150, 0.9);
+  border: 2px solid var(--cyan);
+  box-shadow: 0 0 16px rgba(95, 240, 255, 0.45);
+}
+
+.action {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 2px solid var(--cyan);
+  background: rgba(8, 20, 40, 0.75);
+  color: var(--cyan);
+  font-size: 26px;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  box-shadow: 0 0 22px rgba(42, 140, 255, 0.3);
+}
+
+.action:active {
+  background: rgba(22, 92, 150, 0.9);
+}
+
+.notice {
+  position: absolute;
+  left: 50%;
+  bottom: max(150px, calc(env(safe-area-inset-bottom) + 150px));
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}

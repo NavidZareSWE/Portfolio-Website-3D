@@ -1,0 +1,6 @@
+.stage {
+  position: fixed;
+  inset: 0;
+  outline: none;
+  background: var(--bg);
+}

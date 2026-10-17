@@ -1,0 +1,392 @@
+/* Section content follows the card's language: hairline cyan rules,
+   4–6px radii, mono labels, uppercase display headings. Logical properties
+   (inline-start/end) keep the layout correct in both LTR and RTL. */
+
+.stack {
+  display: grid;
+  gap: 18px;
+}
+
+.lead {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(219, 244, 255, 0.82);
+}
+
+:lang(fa) .lead,
+:lang(fa) .body {
+  line-height: 1.95;
+}
+
+/* Rich text from the locale files (About copy, résumé bullets). */
+.lead strong,
+.body strong,
+.points strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.lead a,
+.body a {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(95, 240, 255, 0.35);
+}
+
+.lead a[data-unlinked],
+.body a[data-unlinked] {
+  color: inherit;
+  border-bottom: none;
+}
+
+/* ---------------------------------------------------------------- About */
+
+.hello {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.greeting {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 18px 18px 18px 0;
+  color: var(--bg);
+  background: var(--cyan);
+  box-shadow: 0 0 18px rgba(95, 240, 255, 0.35);
+}
+
+:dir(rtl) .greeting {
+  border-radius: 18px 18px 0 18px;
+}
+
+.iAm {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 4vw, 30px);
+  font-weight: 700;
+  color: #fff;
+}
+
+.roleLine {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--cyan);
+}
+
+/* ------------------------------------------------------------- Projects */
+
+.list {
+  list-style: none;
+  display: grid;
+  gap: 14px;
+}
+
+.card {
+  display: grid;
+  gap: 10px;
+}
+
+.cardTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+:lang(fa) .cardTitle {
+  letter-spacing: 0;
+  line-height: 1.6;
+}
+
+.shots {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+}
+
+.shots a {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(95, 240, 255, 0.04);
+}
+
+.shots img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  filter: saturate(0.75) contrast(1.05);
+  transition: filter 160ms var(--ease-out);
+}
+
+.shots a:hover img,
+.shots a:focus-visible img {
+  filter: none;
+}
+
+.moreShots {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--cyan);
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.link {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(95, 240, 255, 0.35);
+}
+
+.link:hover {
+  border-bottom-color: var(--cyan);
+}
+
+.offline {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  color: var(--muted);
+  border: 1px dashed rgba(125, 156, 186, 0.6);
+}
+
+/* --------------------------------------------------------------- Skills */
+
+.group {
+  display: grid;
+  gap: 10px;
+}
+
+.groupTitle,
+.channelLabel,
+.period {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+:lang(fa) .groupTitle,
+:lang(fa) .channelLabel,
+:lang(fa) .period {
+  letter-spacing: 0;
+  font-size: 12.5px;
+}
+
+.skills {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 5px 9px;
+  border-radius: 3px;
+  color: var(--text);
+  background: rgba(42, 140, 255, 0.1);
+  border: 1px solid rgba(42, 140, 255, 0.4);
+}
+
+.skillIcon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  overflow: hidden;
+}
+
+.skillIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Black single-colour logos (GitHub, CodePen) turn white on the dark panel. */
+.skillIconInvert {
+  filter: invert(1);
+}
+
+.toggle {
+  justify-self: start;
+  font: 600 12px var(--font-mono);
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: var(--cyan);
+  background: rgba(95, 240, 255, 0.06);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.toggle:hover:not(:disabled) {
+  border-color: var(--cyan);
+}
+
+.toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ----------------------------------------------------------- Experience */
+
+.timeline {
+  list-style: none;
+  display: grid;
+  gap: 22px;
+  border-inline-start: 2px dashed rgba(42, 140, 255, 0.5);
+  padding-inline-start: 20px;
+  margin-inline-start: 6px;
+}
+
+.entry {
+  position: relative;
+  display: grid;
+  gap: 6px;
+}
+
+.entry::before {
+  content: "o";
+  position: absolute;
+  inset-inline-start: -30px;
+  top: -3px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cyan);
+  background: var(--panel-solid);
+  padding: 2px 3px;
+  text-shadow: 0 0 8px rgba(95, 240, 255, 0.8);
+}
+
+.org {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.points {
+  margin-top: 4px;
+  padding-inline-start: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+:lang(fa) .points {
+  line-height: 1.9;
+}
+
+.points li::marker {
+  color: var(--cyan);
+}
+
+/* -------------------------------------------------------------- Contact */
+
+.channels {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.channel {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-inline-start: 2px solid var(--cyan);
+  border-radius: 4px;
+  background: rgba(95, 240, 255, 0.03);
+  overflow-wrap: anywhere;
+}
+
+.channel .link {
+  justify-self: start;
+}
+
+.form {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(95, 240, 255, 0.03);
+}
+
+.field {
+  display: grid;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.field input,
+.field textarea {
+  font: 14px var(--font-display);
+  color: var(--text);
+  padding: 9px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: rgba(4, 10, 20, 0.7);
+  resize: vertical;
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
+
+.field input:disabled,
+.field textarea:disabled {
+  opacity: 0.55;
+}
+
+.formStatus {
+  min-height: 1.2em;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+@media (max-width: 420px) {
+  .channel {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
