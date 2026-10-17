@@ -52,11 +52,24 @@ export default async function initTranslations(
     interpolation: { escapeValue: false },
   });
 
+  // A namespace file missing from /locales would otherwise ship raw keys
+  // (e.g. "hud.index") instead of text; stop the server render, and so the build.
+  if (!resources) {
+    const loaded = i18nInstance.services.resourceStore.data;
+    const missing = i18nConfig.locales.flatMap((lng) =>
+      namespaces.filter((ns) => !loaded[lng]?.[ns]).map((ns) => `locales/${lng}/${ns}.json`),
+    );
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing translation files: ${missing.join(", ")}. ` +
+          "Add these namespaces to the i18nexus project (or restore the files) and run `i18nexus pull`.",
+      );
+    }
+  }
+
   return {
     i18n: i18nInstance,
-    resources: {
-      [locale]: i18nInstance.services.resourceStore.data[locale],
-    } as Resource,
+    resources: { [locale]: i18nInstance.services.resourceStore.data[locale] } as Resource,
     t: i18nInstance.t,
   };
 }

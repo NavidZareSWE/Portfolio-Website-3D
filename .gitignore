@@ -270,4 +270,6 @@ __marimo__/
 # Re-include any lib/ that sits under a src/ folder.
 !**/src/**/lib/
 
-locales*
+/locales/**/*.json
+!/locales/*/ui.json
+!/locales/*/experience.json
