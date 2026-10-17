@@ -6,7 +6,7 @@
     "dev": "i18nexus pull &&  node scripts/dev.mjs",
     "build": "i18nexus pull &&  next build",
     "start": "i18nexus pull &&  next start",
-       "i18n:push": "node scripts/i18n-push.mjs",
+    "i18n:push": "node scripts/i18n-push.mjs",
     "lint": "eslint",
     "i18n:pull": "i18nexus pull",
     "remove-dotGit": "rm -rf .git",

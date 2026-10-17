@@ -48,7 +48,10 @@ const LIST_LIMIT = 12;
 /* Setup                                                              */
 /* ------------------------------------------------------------------ */
 
-if (process.env.I18NEXUS_NO_DOT_ENV !== "true" && existsSync(path.join(ROOT, ".env"))) {
+if (
+  process.env.I18NEXUS_NO_DOT_ENV !== "true" &&
+  existsSync(path.join(ROOT, ".env"))
+) {
   process.loadEnvFile(path.join(ROOT, ".env"));
 }
 
@@ -59,7 +62,8 @@ const dryRun = flags.has("--dry-run");
 const assumeYes = flags.has("--yes");
 const known = new Set(["--dry-run", "--yes"]);
 for (const flag of flags) {
-  if (!known.has(flag)) fail(`Unknown option ${flag}. Options: --dry-run, --yes`);
+  if (!known.has(flag))
+    fail(`Unknown option ${flag}. Options: --dry-run, --yes`);
 }
 
 const apiKey = process.env.I18NEXUS_API_KEY;
@@ -109,7 +113,9 @@ async function request(method, route, body) {
     }
     if (response.status < 200 || response.status >= 300) {
       const detail = json?.error?.message || text.slice(0, 300) || "(no body)";
-      throw new Error(`${method} ${route} -> HTTP ${response.status}: ${detail}`);
+      throw new Error(
+        `${method} ${route} -> HTTP ${response.status}: ${detail}`,
+      );
     }
     return json;
   }
@@ -126,9 +132,12 @@ function readJson(file) {
 /** Flattens nested objects and arrays to dot paths: { a: { b: ["x"] } } -> { "a.b.0": "x" }. */
 function flatten(value, prefix = "", out = {}) {
   if (value !== null && typeof value === "object") {
-    const entries = Array.isArray(value) ? value.map((v, i) => [String(i), v]) : Object.entries(value);
+    const entries = Array.isArray(value)
+      ? value.map((v, i) => [String(i), v])
+      : Object.entries(value);
     if (entries.length === 0 && prefix) out[prefix] = value;
-    for (const [key, child] of entries) flatten(child, prefix ? `${prefix}.${key}` : key, out);
+    for (const [key, child] of entries)
+      flatten(child, prefix ? `${prefix}.${key}` : key, out);
   } else {
     out[prefix] = value;
   }
@@ -143,18 +152,21 @@ function diff(local, remote) {
   const remoteOnly = [];
   for (const key of Object.keys(a)) {
     if (!(key in b)) added.push(key);
-    else if (JSON.stringify(a[key]) !== JSON.stringify(b[key])) changed.push(key);
+    else if (JSON.stringify(a[key]) !== JSON.stringify(b[key]))
+      changed.push(key);
   }
   for (const key of Object.keys(b)) if (!(key in a)) remoteOnly.push(key);
   return { added, changed, remoteOnly };
 }
 
 const listed = (keys) =>
-  keys.slice(0, LIST_LIMIT).join(", ") + (keys.length > LIST_LIMIT ? `, ... (+${keys.length - LIST_LIMIT} more)` : "");
+  keys.slice(0, LIST_LIMIT).join(", ") +
+  (keys.length > LIST_LIMIT ? `, ... (+${keys.length - LIST_LIMIT} more)` : "");
 
 async function fetchRemote(languages) {
   const remote = {};
-  for (const lng of languages) remote[lng] = (await request("GET", `translations/${lng}.json`)) ?? {};
+  for (const lng of languages)
+    remote[lng] = (await request("GET", `translations/${lng}.json`)) ?? {};
   return remote;
 }
 
@@ -162,23 +174,33 @@ async function fetchRemote(languages) {
 /* Compare                                                            */
 /* ------------------------------------------------------------------ */
 
-const languagesResponse = await request("GET", "languages.json").catch((error) =>
-  fail(`Could not read the project's languages. Check I18NEXUS_API_KEY.\n  ${error.message}`),
+const languagesResponse = await request("GET", "languages.json").catch(
+  (error) =>
+    fail(
+      `Could not read the project's languages. Check I18NEXUS_API_KEY.\n  ${error.message}`,
+    ),
 );
-const projectLanguages = (languagesResponse?.collection ?? []).map((lng) => lng.full_code);
-if (projectLanguages.length === 0) fail("The i18nexus project returned no languages.");
+const projectLanguages = (languagesResponse?.collection ?? []).map(
+  (lng) => lng.full_code,
+);
+if (projectLanguages.length === 0)
+  fail("The i18nexus project returned no languages.");
 
 const localLanguages = readdirSync(LOCALES_DIR, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name);
-const unknownLanguages = localLanguages.filter((lng) => !projectLanguages.includes(lng));
+const unknownLanguages = localLanguages.filter(
+  (lng) => !projectLanguages.includes(lng),
+);
 if (unknownLanguages.length > 0) {
   fail(
     `locales/ has languages the i18nexus project does not: ${unknownLanguages.join(", ")} ` +
       `(project languages: ${projectLanguages.join(", ")}). Add them in i18nexus first.`,
   );
 }
-const languages = projectLanguages.filter((lng) => localLanguages.includes(lng));
+const languages = projectLanguages.filter((lng) =>
+  localLanguages.includes(lng),
+);
 
 const localNamespaces = [
   ...new Set(
@@ -189,8 +211,11 @@ const localNamespaces = [
     ),
   ),
 ].sort();
-const missingSelected = onlyNamespaces.filter((ns) => !localNamespaces.includes(ns));
-if (missingSelected.length > 0) fail(`No local files for: ${missingSelected.join(", ")}`);
+const missingSelected = onlyNamespaces.filter(
+  (ns) => !localNamespaces.includes(ns),
+);
+if (missingSelected.length > 0)
+  fail(`No local files for: ${missingSelected.join(", ")}`);
 const namespaces = onlyNamespaces.length > 0 ? onlyNamespaces : localNamespaces;
 
 const local = {};
@@ -213,14 +238,20 @@ for (const ns of namespaces) {
   for (const lng of languages) {
     if (local[lng][ns] === undefined) continue;
     const d = diff(local[lng][ns], remote[lng]?.[ns]);
-    if (d.added.length || d.changed.length || d.remoteOnly.length) changes[lng] = d;
+    if (d.added.length || d.changed.length || d.remoteOnly.length)
+      changes[lng] = d;
   }
-  const toUpload = Object.keys(changes).filter((lng) => changes[lng].added.length || changes[lng].changed.length);
-  if (Object.keys(changes).length > 0) plan.push({ ns, isNew, changes, toUpload });
+  const toUpload = Object.keys(changes).filter(
+    (lng) => changes[lng].added.length || changes[lng].changed.length,
+  );
+  if (Object.keys(changes).length > 0)
+    plan.push({ ns, isNew, changes, toUpload });
 }
 
 if (plan.length === 0) {
-  console.log("[i18n:push] i18nexus already matches locales/. Nothing to push.");
+  console.log(
+    "[i18n:push] i18nexus already matches locales/. Nothing to push.",
+  );
   process.exit(0);
 }
 
@@ -228,10 +259,16 @@ console.log("");
 for (const { ns, isNew, changes } of plan) {
   console.log(`  ${ns}${isNew ? "  (new namespace, will be created)" : ""}`);
   for (const [lng, d] of Object.entries(changes)) {
-    if (d.added.length) console.log(`    ${lng}  + ${d.added.length} new: ${listed(d.added)}`);
-    if (d.changed.length) console.log(`    ${lng}  ~ ${d.changed.length} changed: ${listed(d.changed)}`);
+    if (d.added.length)
+      console.log(`    ${lng}  + ${d.added.length} new: ${listed(d.added)}`);
+    if (d.changed.length)
+      console.log(
+        `    ${lng}  ~ ${d.changed.length} changed: ${listed(d.changed)}`,
+      );
     if (d.remoteOnly.length) {
-      console.log(`    ${lng}  - ${d.remoteOnly.length} only in i18nexus (NOT deleted): ${listed(d.remoteOnly)}`);
+      console.log(
+        `    ${lng}  - ${d.remoteOnly.length} only in i18nexus (NOT deleted): ${listed(d.remoteOnly)}`,
+      );
     }
   }
 }
@@ -239,17 +276,25 @@ console.log("");
 
 const uploads = plan.filter((entry) => entry.toUpload.length > 0);
 if (uploads.length === 0) {
-  console.log("[i18n:push] Nothing to upload. Keys that exist only in i18nexus must be deleted in the dashboard.");
+  console.log(
+    "[i18n:push] Nothing to upload. Keys that exist only in i18nexus must be deleted in the dashboard.",
+  );
   process.exit(0);
 }
 if (dryRun) {
-  console.log(`[i18n:push] Dry run: ${uploads.length} namespace(s) would be uploaded. Nothing was sent.`);
+  console.log(
+    `[i18n:push] Dry run: ${uploads.length} namespace(s) would be uploaded. Nothing was sent.`,
+  );
   process.exit(0);
 }
 
 if (!assumeYes) {
-  if (!process.stdin.isTTY) fail("Not an interactive terminal. Re-run with --yes to upload.");
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  if (!process.stdin.isTTY)
+    fail("Not an interactive terminal. Re-run with --yes to upload.");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
   const answer = await rl.question(
     `Upload ${uploads.length} namespace(s) to i18nexus? Existing values for these keys will be overwritten. [y/N] `,
   );
@@ -274,14 +319,18 @@ for (const { ns, isNew, toUpload } of uploads) {
     }
     const wait = lastImportAt + IMPORT_GAP_MS - Date.now();
     if (wait > 0) {
-      console.log(`  waiting ${Math.ceil(wait / 1000)} s (i18nexus allows 5 imports per minute) ...`);
+      console.log(
+        `  waiting ${Math.ceil(wait / 1000)} s (i18nexus allows 5 imports per minute) ...`,
+      );
       await sleep(wait);
     }
     console.log(`[i18n:push] importing "${ns}" (${toUpload.join(", ")}) ...`);
     lastImportAt = Date.now();
     await request("POST", "import.json", {
       namespace: ns,
-      languages: Object.fromEntries(toUpload.map((lng) => [lng, local[lng][ns]])),
+      languages: Object.fromEntries(
+        toUpload.map((lng) => [lng, local[lng][ns]]),
+      ),
       overwrite: true,
       confirm: true,
     });
@@ -316,7 +365,11 @@ for (const { ns, isNew, toUpload } of uploads) {
 
 console.log("");
 if (failures > 0) {
-  console.log(`[i18n:push] Finished with ${failures} problem(s). Check them before running \`i18nexus pull\`.`);
+  console.log(
+    `[i18n:push] Finished with ${failures} problem(s). Check them before running \`i18nexus pull\`.`,
+  );
   process.exit(1);
 }
-console.log("[i18n:push] Done. `i18nexus pull` now downloads these files as they are in locales/.");
+console.log(
+  "[i18n:push] Done. `i18nexus pull` now downloads these files as they are in locales/.",
+);
