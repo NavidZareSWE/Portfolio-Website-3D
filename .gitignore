@@ -136,6 +136,10 @@ output/*
 **/output
 test*.py
 
+# Translations: i18nexus is the source of truth. `i18nexus pull` downloads them
+# (dev/build/start run it first); upload edits with `npm run i18n:push`.
+/locales/
+
 
 # ==============================================================================
 # 7. Python
@@ -269,8 +273,3 @@ __marimo__/
 # The Python `lib/` rule also matches JS/TS source folders such as src/lib/.
 # Re-include any lib/ that sits under a src/ folder.
 !**/src/**/lib/
-
-/locales/**/*.json
-!/locales/*/ui.json
-!/locales/*/experience.json
-!/locales/*/about.json
