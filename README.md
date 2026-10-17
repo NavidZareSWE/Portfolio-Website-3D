@@ -42,12 +42,12 @@ The repository has no automated unit, integration or end-to-end test suite.
 
 Only `I18NEXUS_API_KEY` is required (the scripts download the translations). The others are optional:
 
-| Variable                                                            | Read by                                                          | Effect                                                                                                                                     |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `NEXT_PUBLIC_SITE_URL`                                              | `src/app/[locale]/layout.tsx`                                    | Sets `metadataBase` for absolute metadata URLs. Unset: no `metadataBase`.                                                                  |
-| `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY`                                  | `src/components/ui/SectionContent.tsx`                           | Contact form posts to Web3Forms. Unset: Send opens the visitor's email app instead.                                                        |
-| `I18NEXUS_API_KEY`                                                  | `i18nexus-cli` (`npm run dev`, `build`, `start` and `i18n:pull`) | **Required.** Downloads the i18nexus namespaces into `locales/` (only `ui` is committed). Not part of the client bundle.                  |
-| `NEXT_PUBLIC_DEV_LOD`, `NEXT_PUBLIC_DEV_GPU`, `NEXT_PUBLIC_DEV_NET` | `src/three/quality/devOverrides.ts`                              | Development-only overrides, set by `scripts/dev.mjs` from `--lod/--gpu/--net`. Ignored when `NODE_ENV` is not `development`.               |
+| Variable                                                            | Read by                                                          | Effect                                                                                                                       |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`                                              | `src/app/[locale]/layout.tsx`                                    | Sets `metadataBase` for absolute metadata URLs. Unset: no `metadataBase`.                                                    |
+| `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY`                                  | `src/components/ui/SectionContent.tsx`                           | Contact form posts to Web3Forms. Unset: Send opens the visitor's email app instead.                                          |
+| `I18NEXUS_API_KEY`                                                  | `i18nexus-cli` (`npm run dev`, `build`, `start` and `i18n:pull`) | **Required.** Downloads the i18nexus namespaces into `locales/` (only `ui` is committed). Not part of the client bundle.     |
+| `NEXT_PUBLIC_DEV_LOD`, `NEXT_PUBLIC_DEV_GPU`, `NEXT_PUBLIC_DEV_NET` | `src/three/quality/devOverrides.ts`                              | Development-only overrides, set by `scripts/dev.mjs` from `--lod/--gpu/--net`. Ignored when `NODE_ENV` is not `development`. |
 
 `NEXT_PUBLIC_*` values are inlined into the client bundle at build time, so they must never hold secrets.
 

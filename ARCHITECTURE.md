@@ -137,7 +137,7 @@ These are not part of the runtime bundle:
 | Path                    | Purpose                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `scripts/dev.mjs`       | Wraps `next dev`. Maps `--lod`, `--gpu` and `--net` to the `NEXT_PUBLIC_DEV_*` variables.                                                   |
-| `scripts/i18n-push.mjs` | Uploads changed `locales/` namespaces to i18nexus (`npm run i18n:push`) and checks the result. Skips `ui`, which is committed. |
+| `scripts/i18n-push.mjs` | Uploads changed `locales/` namespaces to i18nexus (`npm run i18n:push`) and checks the result. Skips `ui`, which is committed.              |
 | `scripts/character/`    | Python procedural generator for the character GLBs, the glyph-figure GLB, the rig module and the tier manifest.                             |
 | `scripts/mask/`         | Python script that turns the mask reference image into the two mask textures.                                                               |
 | `tools/fast-glob-shim/` | Local replacement for `fast-glob` (backed by `tinyglobby`), wired through `package.json` `overrides` (see the README's "Dependency audit"). |
