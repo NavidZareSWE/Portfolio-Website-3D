@@ -442,7 +442,7 @@ function Contact() {
     },
     {
       label: t("common:socials.linkedin"),
-      value: "linkedin.com/in/navid-z",
+      value: "linkedin.com/in/navid-zare-swe",
       href: CONTACT.linkedin,
       external: true,
     },

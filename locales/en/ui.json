@@ -38,7 +38,7 @@
   },
   "prompt": {
     "hold": "[ HOLD SPACE TO ACCESS ]",
-    "holdTouch": "[ HOLD ◉ TO ACCESS ]"
+    "holdTouch": "[ HOLD THE GREEN ◉ BUTTON ]"
   },
   "guide": {
     "aria": "Controls: W, A, S and D to move. Space to jump. Hold Space next to a hologram to open it. Hold Shift to sprint.",
@@ -52,7 +52,11 @@
   "touch": {
     "action": "Jump, or hold next to a hologram to open it",
     "stick": "Movement joystick",
-    "hint": "Best explored on a keyboard-equipped device."
+    "hint": "Best explored on a keyboard-equipped device.",
+    "moveLabel": "MOVE",
+    "jumpLabel": "JUMP",
+    "openLabel": "HOLD TO OPEN",
+    "openAria": "Hold to open the hologram"
   },
   "loading": {
     "brand": "Portfolio",
@@ -109,7 +113,7 @@
     "class": "CLASS",
     "tagline": {
       "about": ["WHOAMI", "FULL-STACK", "REACT", "NEXT.JS", "NODE.JS", "///"],
-      "projects": ["8 BUILDS", "=", "FULL-STACK", "FRONT-END", "AR", "///"],
+      "projects": ["9 BUILDS", "=", "FULL-STACK", "FRONT-END", "AR", "///"],
       "skills": [
         "REACT",
         "NEXT.JS",

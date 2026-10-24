@@ -5,8 +5,8 @@
 export const CONTACT = {
   email: "NavidZareSWE@gmail.com",
   github: "https://github.com/NavidZareSWE",
-  // The résumé's LinkedIn address (the older site used /in/NavidZareSWE/).
-  linkedin: "https://www.linkedin.com/in/navid-z-5b654b355/",
+  // The résumé's LinkedIn address.
+  linkedin: "https://www.linkedin.com/in/navid-zare-swe/",
   telegram: "https://t.me/NavidZareSWE",
   map: "https://maps.app.goo.gl/Bg3W7M6TkNXr1SPEA",
 } as const;

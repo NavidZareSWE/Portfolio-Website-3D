@@ -8,6 +8,12 @@
   width: min(340px, calc(100vw - 32px));
 }
 
+/* Touch devices: sit above the stick and the action button (120px stick +
+   20px caption + bottom padding), never on top of them. */
+.touch {
+  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 164px);
+}
+
 .prompt {
   opacity: 0;
   transform: translateY(10px);
@@ -43,6 +49,12 @@
   letter-spacing: 0.06em;
   color: #c9f8ff;
   text-shadow: 0 0 10px rgba(95, 240, 255, 0.6);
+}
+
+/* Same green as the action button it refers to. */
+.keyTouch {
+  color: var(--green);
+  text-shadow: 0 0 10px rgba(61, 255, 122, 0.55);
 }
 
 .text strong {

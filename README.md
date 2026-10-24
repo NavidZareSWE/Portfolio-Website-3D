@@ -77,7 +77,7 @@ In development the browser console prints which model was loaded, why, and what 
 | Esc / close button     | Return to the world (same position)                                                                           |
 | Index button           | Open any section directly (keyboard and screen-reader friendly)                                               |
 
-Touch-only devices get a virtual stick and an action button.
+Touch-only devices get a virtual stick (labelled MOVE) and an action button (labelled JUMP). Next to a card the action button turns green and pulses, its label changes to HOLD TO OPEN, and a ring around it fills while it is held; the card prompt ("HOLD THE GREEN ◉ BUTTON") sits above both controls.
 
 ## Where things live
 

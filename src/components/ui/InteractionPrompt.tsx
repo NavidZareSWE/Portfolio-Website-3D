@@ -45,7 +45,10 @@ export default function InteractionPrompt({
   const visible = cardId !== null;
 
   return (
-    <div className={styles.wrap} aria-live="polite">
+    <div
+      className={`${styles.wrap} ${touchMode ? styles.touch : ""}`}
+      aria-live="polite"
+    >
       <HoloFrame
         compact
         index={meta?.index}
@@ -54,7 +57,7 @@ export default function InteractionPrompt({
         aria-hidden={!visible}
       >
         <p className={styles.line}>
-          <span className={styles.key}>
+          <span className={`${styles.key} ${touchMode ? styles.keyTouch : ""}`}>
             {touchMode ? t("prompt.holdTouch") : t("prompt.hold")}
           </span>
           <span className={styles.text}>

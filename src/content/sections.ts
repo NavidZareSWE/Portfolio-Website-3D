@@ -40,7 +40,7 @@ export const SECTION_META: readonly SectionMeta[] = [
       "|-- arput     ",
       "|-- forever   ",
       "|-- quickblog ",
-      "`-- [+5]      ",
+      "`-- [+6]      ",
     ],
   },
   {

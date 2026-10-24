@@ -23,6 +23,32 @@
   pointer-events: auto;
 }
 
+/* One control plus its caption underneath. */
+.control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.caption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.captionReady {
+  color: var(--green);
+  text-shadow: 0 0 8px rgba(61, 255, 122, 0.55);
+}
+
+/* ---------------------------------------------------------------- stick */
+
 .stick {
   position: relative;
   width: 120px;
@@ -39,6 +65,40 @@
   place-items: center;
 }
 
+/* Direction marks on the ring, so the stick reads as "drag to move". */
+.chevron {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-top: 2px solid rgba(95, 240, 255, 0.55);
+  border-left: 2px solid rgba(95, 240, 255, 0.55);
+  pointer-events: none;
+}
+
+.up {
+  top: 9px;
+  left: calc(50% - 4.5px);
+  transform: rotate(45deg);
+}
+
+.right {
+  right: 9px;
+  top: calc(50% - 4.5px);
+  transform: rotate(135deg);
+}
+
+.down {
+  bottom: 9px;
+  left: calc(50% - 4.5px);
+  transform: rotate(225deg);
+}
+
+.left {
+  left: 9px;
+  top: calc(50% - 4.5px);
+  transform: rotate(315deg);
+}
+
 .knob {
   width: 48px;
   height: 48px;
@@ -48,28 +108,94 @@
   box-shadow: 0 0 16px rgba(95, 240, 255, 0.45);
 }
 
+/* --------------------------------------------------------------- action */
+
 .action {
+  position: relative;
   width: 76px;
   height: 76px;
   border-radius: 50%;
   border: 2px solid var(--cyan);
   background: rgba(8, 20, 40, 0.75);
   color: var(--cyan);
-  font-size: 26px;
+  display: grid;
+  place-items: center;
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
   box-shadow: 0 0 22px rgba(42, 140, 255, 0.3);
+  transition:
+    border-color 200ms var(--ease-out),
+    color 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out),
+    background-color 200ms var(--ease-out);
 }
 
 .action:active {
   background: rgba(22, 92, 150, 0.9);
 }
 
+.actionIcon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+/* Next to a card: the green HOLD button the prompt asks for. */
+.ready {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(6, 40, 22, 0.8);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.ready:active,
+.holding {
+  background: rgba(14, 82, 42, 0.92);
+  animation: none;
+  box-shadow: 0 0 30px rgba(61, 255, 122, 0.55);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(61, 255, 122, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 9px rgba(61, 255, 122, 0);
+  }
+}
+
+/* Hold progress, filled from the Experience's chargeProgress stream. */
+.ring {
+  position: absolute;
+  inset: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.ring circle {
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.ready .ring circle {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------- notice */
+
+/* Above the controls (stick 120 + caption 20); the card prompt takes this
+   spot while a card is in range, so the notice steps aside. */
 .notice {
   position: absolute;
   left: 50%;
-  bottom: max(150px, calc(env(safe-area-inset-bottom) + 150px));
+  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 164px);
   transform: translateX(-50%);
   width: max-content;
   max-width: calc(100vw - 32px);
@@ -78,4 +204,15 @@
   font-size: 10px;
   letter-spacing: 0.06em;
   color: var(--muted);
+  transition: opacity 200ms var(--ease-out);
+}
+
+.noticeHidden {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ready {
+    animation: none;
+  }
 }
