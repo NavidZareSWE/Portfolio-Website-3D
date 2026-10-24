@@ -146,7 +146,7 @@
     "routingTradeoff": "QUALITY · COST · LATENCY",
     "smallModel": "SMALL MODEL",
     "largeModel": "LARGE MODEL",
-    "detected": "HACKER DETECTED\n90% ACCURACY"
+    "detected": "HACKER DETECTED\n99% ACCURACY"
   },
   "language": {
     "en": "English",
