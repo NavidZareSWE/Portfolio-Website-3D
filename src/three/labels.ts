@@ -20,7 +20,23 @@ export interface SceneLabels {
     role: string;
     status: string;
   };
-  world: { calling: string; underConstruction: string; build: string };
+  world: {
+    calling: string;
+    underConstruction: string;
+    build: string;
+    /** Data-flow scene beside Projects (interface → API → database). */
+    server: string;
+    database: string;
+    /** face-recognition-brain scanner arch. */
+    scanner: string;
+    /** M.Sc. research scene: LLM routing. */
+    routing: string;
+    routingTradeoff: string;
+    smallModel: string;
+    largeModel: string;
+    /** Scanner arch readout when the player walks through. */
+    detected: string;
+  };
 }
 
 /** English fallback, used by tests and if no labels are supplied. */
@@ -65,5 +81,13 @@ export const DEFAULT_LABELS: SceneLabels = {
     calling: "CALLING",
     underConstruction: "UNDER CONSTRUCTION",
     build: "> projects.build()",
+    server: "API SERVER\nNode.js · Express",
+    database: "DATABASE\nMongoDB · PostgreSQL",
+    scanner: "face-recognition-brain\nface detection, in the browser",
+    routing: "LLM ROUTING\nM.Sc. research",
+    routingTradeoff: "QUALITY · COST · LATENCY",
+    smallModel: "SMALL MODEL",
+    largeModel: "LARGE MODEL",
+    detected: "HACKER DETECTED\n90% ACCURACY",
   },
 };

@@ -1,11 +1,11 @@
-import type { Group } from "three";
+import type { Group, Mesh, Raycaster } from "three";
 import { SECTION_META } from "@/content/sections";
 import type { SectionId } from "@/types";
 import { CARD } from "../config";
 import type { CollisionSystem } from "../physics/CollisionSystem";
 import { screenToWorld } from "../utils/math";
 import type { SceneLabels } from "../labels";
-import type { CardText, PortraitImage } from "./cardFace";
+import type { CardFaceDetail, CardText, PortraitImage } from "./cardFace";
 import { HolographicCard, createSharedCardResources } from "./HolographicCard";
 
 /**
@@ -29,6 +29,9 @@ export interface CardFaceAssets {
   maxAnisotropy: number;
   /** Translated card text. */
   labels: SceneLabels;
+  /** Face resolution and ASCII density (quality/TextureDetail.ts). */
+  detail: CardFaceDetail;
+  mipBias: number;
 }
 
 function cardText(labels: SceneLabels, id: SectionId): CardText {
@@ -49,6 +52,12 @@ function cardText(labels: SceneLabels, id: SectionId): CardText {
 export class CardRegistry {
   readonly cards: HolographicCard[];
   private readonly byId = new Map<SectionId, HolographicCard>();
+  private readonly faces: Mesh[];
+  private pending: {
+    detail: CardFaceDetail;
+    mipBias: number;
+    next: number;
+  } | null = null;
 
   constructor(
     parent: Group,
@@ -64,9 +73,13 @@ export class CardRegistry {
         screenToWorld(layout.right, layout.up),
         shared,
         {
-          ...assets,
+          logoSvg: assets.logoSvg,
+          portrait: assets.portrait,
+          maxAnisotropy: assets.maxAnisotropy,
           text: cardText(assets.labels, meta.id),
         },
+        assets.detail,
+        assets.mipBias,
       );
       parent.add(card.group);
       this.byId.set(meta.id, card);
@@ -80,9 +93,34 @@ export class CardRegistry {
       });
       return card;
     });
+    this.faces = this.cards.map((card) => card.faceMesh);
   }
 
   get(id: SectionId): HolographicCard | undefined {
     return this.byId.get(id);
+  }
+
+  /**
+   * Redraws every face at a new resolution or ASCII density. One face is
+   * redrawn per frame (`updatePending`), so a change never stalls a frame
+   * for all five.
+   */
+  setDetail(detail: CardFaceDetail, mipBias: number) {
+    this.pending = { detail, mipBias, next: 0 };
+  }
+
+  /** Called once per frame: redraws the next face waiting for a detail change. */
+  updatePending() {
+    const pending = this.pending;
+    if (!pending) return;
+    this.cards[pending.next].setDetail(pending.detail, pending.mipBias);
+    pending.next++;
+    if (pending.next >= this.cards.length) this.pending = null;
+  }
+
+  /** The card whose face the ray hits first, if any. */
+  pick(raycaster: Raycaster): SectionId | null {
+    const hit = raycaster.intersectObjects(this.faces, false)[0];
+    return (hit?.object.userData.cardId as SectionId | undefined) ?? null;
   }
 }

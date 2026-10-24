@@ -51,7 +51,7 @@ Two channels connect the React interface and the 3D engine:
 
    `ExperienceClient` forwards the low-frequency events into Redux. The continuous hold progress (`chargeProgress`) is never sent through Redux: `InteractionPrompt` writes it straight to a DOM transform through `ExperienceContext`.
 
-The reverse direction is plain method calls on the `Experience`: `setActiveSection`, `setReducedMotion`, `setModelChoice` and the virtual-input setters used by the touch controls.
+The reverse direction is plain method calls on the `Experience`: `setActiveSection`, `setReducedMotion`, `setModelChoice` and the virtual-input setters used by the touch controls and the interaction prompt (`input.setVirtualAction(pressed, source)`; each source is tracked separately).
 
 ## The 3D engine (`src/three/`)
 
@@ -72,25 +72,26 @@ The `Experience` is disposable at any point. An aborted initialisation (React St
 **Per frame** (`tick`):
 
 - The frame time is clamped to 0.1 s and split into fixed sub-steps of at most 1/60 s (`simulate`).
-- Each sub-step handles input, card proximity, Space (open a card or jump), the hold-to-open charge, the character controller (including sprint) and the animation state.
-- `updateVisuals` and `renderFrame` then run once per frame.
+- Each sub-step handles input, card proximity, Space (open a card or jump), the hold-to-open charge, the character controller (including sprint) and the animation state. Pressing the nearby card's face (canvas pointer events and a raycast against the face meshes) or the prompt holds the same virtual Space.
+- `updateVisuals` and `renderFrame` then run once per frame. `renderFrame` is either one pass or the two-pass text composite (see `render/`).
 - While a section is open on a constrained device, frames are throttled to `RENDER.readingFps`.
 - The loop pauses while the tab is hidden.
 
-| Folder         | Contents                                                                                                                                                                                                             |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `camera/`      | Elevated three-quarter follow camera with a fixed direction. It frames the open section beside the overlay panel, using `config/layout.ts`.                                                                          |
-| `input/`       | Keyboard and virtual touch input mapped to logical keys. Shift is the sprint modifier. Events aimed at form fields are ignored.                                                                                      |
-| `physics/`     | Colliders as vertical prisms (walkable tops or solid), with step-up and a play-radius clamp.                                                                                                                         |
-| `character/`   | The generated GLB character, controller, animation (rig in `characterRig.generated.ts`), and the logo and portrait textures.                                                                                         |
-| `cards/`       | `CardRegistry` (layout and colliders) and `HolographicCard` (extruded slab, baked face texture from `cardFace.ts`).                                                                                                  |
-| `interaction/` | Proximity with enter and exit radii, and hold-to-open charge.                                                                                                                                                        |
-| `effects/`     | The glyph atlas, the glyph floor (two passes: a per-cell field render target, then the floor), the instanced data blocks and the digital-rain backdrop.                                                              |
-| `scene/`       | Scene, fog and lights (`createScene`); floor, blocks, rain and logo (`createEnvironment`).                                                                                                                           |
-| `world/`       | The scenes beside each card: glyph materials (`GlyphKit`), the fade (`Fade`), posable glyph figures, merged props and the five vignettes.                                                                            |
-| `quality/`     | `Quality.ts`: GPU and software-render detection, `AdaptiveResolution` and `cappedDevicePixelRatio`. `ModelDetail.ts`: GPU and network classification and `decideTier`. `devOverrides.ts`: development-only switches. |
-| `labels.ts`    | `SceneLabels`, the translated text drawn inside WebGL. React builds it and passes it in, so the engine has no i18n dependency.                                                                                       |
-| `config.ts`    | Tunable constants: `WORLD`, `PLAYER`, `CAMERA`, `INTERACTION`, `CARD`, `GLYPH_FOG`, `SCENES` and `RENDER`.                                                                                                           |
+| Folder         | Contents                                                                                                                                                                                                                                                                         |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `camera/`      | Elevated three-quarter follow camera with a fixed direction. It frames the open section beside the overlay panel, using `config/layout.ts`.                                                                                                                                      |
+| `input/`       | Keyboard and virtual input mapped to logical keys. Shift is the sprint modifier. Events aimed at form fields are ignored. The virtual action is held per source (touch button, prompt, card), so releasing one never cancels another.                                            |
+| `physics/`     | Colliders as vertical prisms (walkable tops or solid), with step-up and a play-radius clamp.                                                                                                                                                                                     |
+| `character/`   | The generated GLB character, controller, animation (rig in `characterRig.generated.ts`), and the logo and portrait textures.                                                                                                                                                     |
+| `cards/`       | `CardRegistry` (layout, colliders, face picking for pointer holds, staggered face redraws) and `HolographicCard` (extruded slab, baked face texture from `cardFace.ts` at the tier's resolution, hold-progress stroke along the edge).                                           |
+| `interaction/` | Proximity with enter and exit radii, and hold-to-open charge.                                                                                                                                                                                                                    |
+| `effects/`     | The glyph atlas, the glyph floor (two passes: a per-cell field render target, then the floor), the instanced data blocks and the digital-rain backdrop.                                                                                                                          |
+| `scene/`       | Scene, fog and lights (`createScene`); floor, blocks, rain and logo (`createEnvironment`).                                                                                                                                                                                       |
+| `world/`       | The scenes beside each card: glyph materials (`GlyphKit`), the fade (`Fade`), posable glyph figures, merged props, `FlowPath` (things that travel along the floor), the five vignettes beside the cards, and three résumé scenes (data flow, scanner arch, LLM routing).         |
+| `render/`      | `CrispComposite`: when the render scale is below the tier's text scale, the world is drawn into a smaller target and the text layer (card faces, signs) on top at full resolution.                                                                                               |
+| `quality/`     | `Quality.ts`: GPU and software-render detection, `AdaptiveResolution` and `cappedDevicePixelRatio`. `ModelDetail.ts`: GPU and network classification and `decideTier`. `TextureDetail.ts`: text and card-face resolution per tier. `devOverrides.ts`: development-only switches. |
+| `labels.ts`    | `SceneLabels`, the translated text drawn inside WebGL. React builds it and passes it in, so the engine has no i18n dependency.                                                                                                                                                   |
+| `config.ts`    | Tunable constants: `WORLD`, `PLAYER`, `CAMERA`, `INTERACTION`, `CARD`, `GLYPH_FOG`, `SCENES` and `RENDER`.                                                                                                                                                                       |
 
 ### Rendering quality
 

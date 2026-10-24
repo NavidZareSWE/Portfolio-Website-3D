@@ -21,8 +21,11 @@ import {
 import { AnonCouncil } from "./vignettes/AnonCouncil";
 import { ConstructionSite } from "./vignettes/ConstructionSite";
 import { CouchCall } from "./vignettes/CouchCall";
+import { DataFlow } from "./vignettes/DataFlow";
 import { HackerDesk } from "./vignettes/HackerDesk";
 import { Hobbies } from "./vignettes/Hobbies";
+import { RoutingFork } from "./vignettes/RoutingFork";
+import { ScannerArch } from "./vignettes/ScannerArch";
 
 /** Two-tone glyph-mask sources built from the reference image (scripts/mask/). */
 export const MASK_URLS = {
@@ -133,6 +136,12 @@ export function createVignettes(options: {
     new CouchCall(ctx, near("contact", SCENE_OFFSET.contact)),
     new Hobbies(ctx, near("about", SCENE_OFFSET.about)),
     new AnonCouncil(ctx, near("experience", SCENE_OFFSET.experience)),
+    // Résumé scenes in the open ground: interface → API → database beside
+    // Projects, the face-detection arch on the path to it, and the M.Sc.
+    // research (LLM routing) beside Experience.
+    new DataFlow(ctx),
+    new ScannerArch(ctx),
+    new RoutingFork(ctx),
   ];
 
   const group = new Group();

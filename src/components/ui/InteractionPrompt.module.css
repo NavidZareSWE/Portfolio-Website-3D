@@ -26,6 +26,21 @@
 .visible {
   opacity: 1;
   transform: none;
+  /* Press and hold the prompt itself (mouse or finger) to open the card. */
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.hint {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
 
 .charging {

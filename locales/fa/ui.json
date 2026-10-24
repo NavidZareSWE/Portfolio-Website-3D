@@ -38,10 +38,12 @@
   },
   "prompt": {
     "hold": "[ برای ورود Space را نگه دارید ]",
-    "holdTouch": "[ دکمه‌ی سبز ◉ را نگه دارید ]"
+    "holdTouch": "[ دکمه‌ی سبز ◉ را نگه دارید ]",
+    "clickHere": "یا همین‌جا یا روی کارت کلیک کنید و نگه دارید",
+    "touchHere": "یا همین‌جا یا روی کارت را لمس کنید و نگه دارید"
   },
   "guide": {
-    "aria": "کنترل‌ها: W، A، S و D برای حرکت. Space برای پرش. کنار یک هولوگرام Space را نگه دارید تا باز شود. برای دویدن Shift را نگه دارید.",
+    "aria": "کنترل‌ها: W، A، S و D برای حرکت. Space برای پرش. کنار یک هولوگرام Space را نگه دارید تا باز شود، یا روی هولوگرام یا راهنمای آن کلیک کنید و نگه دارید. برای دویدن Shift را نگه دارید.",
     "move": "حرکت: WASD",
     "jump": "پرش: SPACE",
     "sprint": "دویدن: SHIFT",
@@ -136,7 +138,15 @@
   "world": {
     "calling": "در حال تماس",
     "underConstruction": "در حال ساخت",
-    "build": "> projects.build()"
+    "build": "> projects.build()",
+    "server": "سرور API\nNode.js · Express",
+    "database": "پایگاه داده\nMongoDB · PostgreSQL",
+    "scanner": "face-recognition-brain\nتشخیص چهره، در خود مرورگر",
+    "routing": "مسیریابی LLM\nپژوهش کارشناسی ارشد",
+    "routingTradeoff": "کیفیت · هزینه · تأخیر",
+    "smallModel": "مدل کوچک",
+    "largeModel": "مدل بزرگ",
+    "detected": "هکر شناسایی شد\nدقت ۹۰٪"
   },
   "language": {
     "en": "English",

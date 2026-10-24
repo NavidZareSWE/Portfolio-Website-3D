@@ -20,6 +20,7 @@ import type { Collider, CollisionSystem } from "../physics/CollisionSystem";
 import { FONTS } from "@/theme/theme";
 import { MONO_FONT_FAMILY } from "../effects/AsciiAtlas";
 import { SCREEN_ALIGNED_YAW, screenToWorld } from "../utils/math";
+import { CRISP_LAYER } from "../render/CrispComposite";
 import { Fader } from "./Fade";
 import { GlyphFigure, type FigureTemplate } from "./GlyphFigure";
 import type { GlyphKit } from "./GlyphKit";
@@ -306,11 +307,22 @@ export function createShadowMaterial(): MeshBasicMaterial {
  */
 const PERSIAN_SCRIPT = /[\u0600-\u06FF]/;
 
+/**
+ * Canvas pixels per metre for world text. High enough that signs stay sharp
+ * when the camera is close (a section open) on 4K and high-DPI screens;
+ * mipmaps keep them smooth when they are small. `fontSize`, line widths and
+ * glow are given at the old 160 px/m and scaled with this.
+ */
+const TEXT_PPM = 384;
+const BASE_PPM = 160;
+
 export class TextPlane {
   readonly mesh: Mesh<PlaneGeometry, MeshBasicMaterial>;
   private readonly canvas: HTMLCanvasElement;
   private readonly texture: CanvasTexture;
   private text = "";
+  /** Canvas pixels per pixel at the base density (scales sizes given in px). */
+  private readonly unit: number;
 
   constructor(
     private readonly options: {
@@ -325,13 +337,14 @@ export class TextPlane {
       rtl?: boolean;
     },
   ) {
-    const ppm = options.pixelsPerMetre ?? 160;
+    const ppm = options.pixelsPerMetre ?? TEXT_PPM;
+    this.unit = ppm / BASE_PPM;
     this.canvas = document.createElement("canvas");
     this.canvas.width = Math.round(options.width * ppm);
     this.canvas.height = Math.round(options.height * ppm);
     this.texture = new CanvasTexture(this.canvas);
     this.texture.colorSpace = SRGBColorSpace;
-    this.texture.anisotropy = 4;
+    this.texture.anisotropy = 8;
     this.mesh = new Mesh(
       new PlaneGeometry(options.width, options.height),
       new MeshBasicMaterial({
@@ -342,6 +355,8 @@ export class TextPlane {
       }),
     );
     this.mesh.rotation.x = FACE_CAMERA_PITCH;
+    // Drawn in the full-resolution pass when the world renders below it.
+    this.mesh.layers.set(CRISP_LAYER);
   }
 
   /**
@@ -373,7 +388,7 @@ export class TextPlane {
       ctx.fillStyle = "rgba(4, 16, 20, 0.82)";
       ctx.fill();
       ctx.strokeStyle = color;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3 * this.unit;
       ctx.stroke();
     }
     const lines = text.split("\n");
@@ -383,7 +398,9 @@ export class TextPlane {
         ? FONTS.persian
         : MONO_FONT_FAMILY;
     // Shrink to fit the plane, so translated text never overflows the frame.
-    let fontSize = options.fontSize ?? canvas.height * 0.42;
+    let fontSize = options.fontSize
+      ? options.fontSize * this.unit
+      : canvas.height * 0.42;
     const maxWidth = canvas.width * 0.88;
     for (const line of fitAs.split("\n")) {
       ctx.font = `700 ${fontSize}px ${fontFor(line)}`;

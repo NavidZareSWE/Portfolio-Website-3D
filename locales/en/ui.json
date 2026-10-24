@@ -38,10 +38,12 @@
   },
   "prompt": {
     "hold": "[ HOLD SPACE TO ACCESS ]",
-    "holdTouch": "[ HOLD THE GREEN ◉ BUTTON ]"
+    "holdTouch": "[ HOLD THE GREEN ◉ BUTTON ]",
+    "clickHere": "or click and hold here, or on the card",
+    "touchHere": "or touch and hold here, or on the card"
   },
   "guide": {
-    "aria": "Controls: W, A, S and D to move. Space to jump. Hold Space next to a hologram to open it. Hold Shift to sprint.",
+    "aria": "Controls: W, A, S and D to move. Space to jump. Hold Space next to a hologram to open it, or click and hold the hologram or its prompt. Hold Shift to sprint.",
     "move": "WASD MOVE",
     "jump": "SPACE JUMP",
     "sprint": "SHIFT SPRINT",
@@ -136,7 +138,15 @@
   "world": {
     "calling": "CALLING",
     "underConstruction": "UNDER CONSTRUCTION",
-    "build": "> projects.build()"
+    "build": "> projects.build()",
+    "server": "API SERVER\nNode.js · Express",
+    "database": "DATABASE\nMongoDB · PostgreSQL",
+    "scanner": "face-recognition-brain\nface detection, in the browser",
+    "routing": "LLM ROUTING\nM.Sc. research",
+    "routingTradeoff": "QUALITY · COST · LATENCY",
+    "smallModel": "SMALL MODEL",
+    "largeModel": "LARGE MODEL",
+    "detected": "HACKER DETECTED\n90% ACCURACY"
   },
   "language": {
     "en": "English",

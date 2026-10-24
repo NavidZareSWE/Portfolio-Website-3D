@@ -74,10 +74,13 @@ In development the browser console prints which model was loaded, why, and what 
 | DETAIL button          | Player model detail: Auto or one of five tiers (saved in this browser)                                        |
 | Space                  | Jump (when no card is nearby)                                                                                 |
 | Hold Space near a card | Open that section (never jumps)                                                                               |
+| Press and hold a card  | Mouse button or finger on the face of the card you are standing at, or on its prompt: same as holding Space   |
 | Esc / close button     | Return to the world (same position)                                                                           |
 | Index button           | Open any section directly (keyboard and screen-reader friendly)                                               |
 
 Touch-only devices get a virtual stick (labelled MOVE) and an action button (labelled JUMP). Next to a card the action button turns green and pulses, its label changes to HOLD TO OPEN, and a ring around it fills while it is held; the card prompt ("HOLD THE GREEN ◉ BUTTON") sits above both controls.
+
+However a hold is made (Space, the action button, or pressing the card or the prompt), a stroke runs clockwise around the card's edge from the top centre while it is held, over a dimmed track, and the rest of the edge lights up as it fills; the prompt's track and the action button's ring fill at the same time. Only the card the hacker is standing at can be pressed, and the mouse cursor turns into a pointer over it. A short click does nothing, the same as tapping Space.
 
 ## Where things live
 
@@ -98,7 +101,8 @@ src/
   theme/theme.ts          single palette and fonts, used by CSS and by the WebGL scene
   three/                  Experience (single loop), camera, input, physics, character,
                           cards, ASCII effects (glyph floor, glyph blocks, digital rain)
-  three/quality/          render quality (adaptive resolution) and player-model tier choice
+  three/quality/          render quality (adaptive resolution), player-model tier choice, text resolution per tier
+  three/render/           CrispComposite: card faces and signs at full resolution over a downscaled world
   three/world/            the scenes beside each card: glyph materials (GlyphKit), posable
                           glyph figures (GlyphFigure + poses), merged props (PropKit), vignettes/
 locales/{en,fa}/*.json   ALL copy, one file per i18next namespace
@@ -187,6 +191,24 @@ On load the site decides the tier in this order:
 
 The connection only decides how much is downloaded, which affects loading time; once the model is loaded, frame rate depends on the GPU and the render scale.
 
+### Text resolution
+
+Text inside the world (card faces, scene signs) stays sharp independently of the render scale:
+
+- **Separate text pass** (`three/render/CrispComposite.ts`). When the adaptive resolution lowers the render scale below the tier's text scale, the world is rendered into a smaller target, stretched onto the canvas with its depth, and the card faces and signs (layer `CRISP_LAYER`) are rendered on top at the text scale, still hidden behind nearer objects. At or above the text scale everything is one pass, as before. The world pass applies the same tone mapping and colour conversion as the canvas, so it looks identical, and no extra shader variants are compiled (one small copy shader). Off for software rendering.
+- **Card faces** (`three/cards/cardFace.ts`) are drawn at a multiple of their 768×1120 layout, large enough for the card at its biggest on the current screen (about 55% of the viewport height, with 25% oversampling), and with smaller ASCII cells on the higher tiers, so the artwork has more characters. The faces are redrawn, one per frame, when the tier changes or the window settles at a size that needs another resolution.
+- **Sampling.** Higher tiers sample the face with a negative mip bias (sharper while the card is small on screen). The face's scanlines fade out where they would be finer than about two screen pixels, and the colour fringe is limited to 0.6 of a screen pixel, so neither softens the text.
+
+| Tier     | Text pass scale | Card face scale             | ASCII cell | Mip bias |
+| -------- | --------------- | --------------------------- | ---------- | -------- |
+| very-low | 1               | 1 to 1.5 (screen-dependent) | 8×12 px    | 0        |
+| low      | 1.5             | 1 to 2                      | 8×12 px    | −0.25    |
+| medium   | 2               | 1.25 to 2                   | 6.8×10.2   | −0.35    |
+| high     | 2               | 1.5 to 2.5                  | 6×9        | −0.5     |
+| super    | 2               | 1.75 to 2.5                 | 5.2×7.8    | −0.5     |
+
+The text pass scale is capped at the device pixel ratio (itself capped at 2). Five faces at scale 1.75 take about 70 MB of texture memory with mipmaps (about 23 MB at scale 1). The values are in `three/quality/TextureDetail.ts`.
+
 The NZSWE emblem is extruded at runtime from `public/logo/nzswe-logo.svg`, the supplied logo, unmodified.
 
 ## The world around the cards
@@ -209,7 +231,23 @@ The construction site has physics: the pallet, crates and two scaffold decks for
 
 The Anonymous masks are glyph art built from the reference image: `scripts/mask/make_mask_textures.py` turns it into a white and a dark two-tone texture, and the shader draws one character per cell from it. The table uses the white one; `MASK_VARIANT` in `vignettes/AnonCouncil.ts` switches to the dark one.
 
-Scenes live in `src/three/world/vignettes/`; their placement relative to each card is `SCENE_OFFSET` in `world/createVignettes.ts`. Each registers its own colliders.
+Three more scenes show work from the résumé, placed in the open ground between the cards:
+
+| Scene                           | Where                              | What it shows                                                                                                                                                                                                                                                                        |
+| ------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Data flow (`DataFlow.ts`)       | Left of the Projects card          | "From interface to database" as traffic: glyph packets leave the Projects card for an API server (Node.js · Express), continue to a database (MongoDB · PostgreSQL), and return as responses, cyan out and green back, on lit floor tracks. All packets are one instanced draw call. |
+| Scanner arch (`ScannerArch.ts`) | On the walk from spawn to Projects | face-recognition-brain. A scan beam sweeps the arch; walking through it locks a detection box onto the hacker's hood, labelled "HACKER DETECTED · 90% ACCURACY".                                                                                                                     |
+| LLM routing (`RoutingFork.ts`)  | Right of the Experience card       | The M.Sc. research. Glyph orbs (queries) roll to a router; light ones go to the small model, heavy ones to the large model. The chosen branch brightens and the answering tower flashes, under a "quality · cost · latency" sign.                                                    |
+
+The server, database, arch posts, router and towers are solid. Their signs are translated (`world.*` in `locales/<lng>/ui.json`).
+
+The world also reacts to the player:
+
+- **Footprints.** Each step brightens the floor glyphs under it into code characters and sends out a ring that fades. Sprint strides are longer and their prints last about twice as long, so running leaves a trail; landing from a jump leaves a wider ripple. The last 16 footprints are uniforms of the floor's per-cell field pass (`effects/AsciiFloor.ts`), so they cost no extra draw calls.
+
+With reduced motion, the rings and moving parts are slowed or skipped like the rest of the world.
+
+Scenes live in `src/three/world/vignettes/`; their placement relative to each card is `SCENE_OFFSET` in `world/createVignettes.ts` (the three résumé scenes have their own centres in their files). Each registers its own colliders.
 
 ## Architecture notes
 
@@ -232,7 +270,7 @@ Scenes live in `src/three/world/vignettes/`; their placement relative to each ca
 
 The world is fill-bound: the simulation takes under a millisecond per frame, and nearly all of the frame is spent shading pixels. Without a GPU the browser rasterises WebGL on the CPU (SwiftShader, llvmpipe, WARP), where every pixel and triangle counts. What the site does about it:
 
-- **Adaptive resolution** (`three/quality/Quality.ts`). Once a second the average frame time is checked. Below 48 fps the render scale drops (two steps if below about 29 fps); above 57 fps it rises one step after 4 s, and an increase that has to be undone blocks the next one for twice as long. It ranges from 0.5 up to the device pixel ratio (at most 2).
+- **Adaptive resolution** (`three/quality/Quality.ts`). Once a second the average frame time is checked. Below 48 fps the render scale drops (two steps if below about 29 fps); above 57 fps it rises one step after 4 s, and an increase that has to be undone blocks the next one for twice as long. It ranges from 0.5 up to the device pixel ratio (at most 2). On a GPU, card faces and signs keep their own scale while the rest of the world goes lower (see "Text resolution").
 - **Device profile.** Software rendering is detected (`failIfMajorPerformanceCaveat`, then the renderer string). It starts at a 0.75 render scale with a ceiling of 1, without MSAA, with 2× instead of 8× anisotropic filtering (the same look from this camera, half the floor's sampling cost), and the automatic player model is very-low (see "Which player model loads"). GPUs start at 1.5 and keep MSAA and 8× filtering.
 - **Floor in two passes** (`effects/AsciiFloor.ts`). Everything except a glyph's shape is constant across a floor cell, and a cell covers hundreds of pixels. The cell field is evaluated once per visible cell into a small texture, and the floor shader only looks it up. Output matches the single-pass shader to within 3/255 (checked pixel by pixel).
 - **Overdraw.** The floor draws after the other opaque objects and the rain backdrop draws last, so covered pixels are rejected by the depth test before their shaders run.
@@ -243,14 +281,14 @@ In the CPU-only test browser here, at 1440×900, one frame at spawn went from ab
 
 ## Measured load (production build, this machine)
 
-| Item                                                                                    | Size                                                                                                                     |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| JavaScript (all chunks, gzip)                                                           | about 400 KB, of which about 205 KB is Three.js                                                                          |
-| Player model `hacker.glb`                                                               | 1.65 MB raw, about 0.92 MB gzip                                                                                          |
-| Other player tiers                                                                      | see the tier table under "Regenerating the character"; only one tier is downloaded per visit unless the visitor switches |
-| Glyph-figure model `hacker-glyph.glb`                                                   | 0.20 MB raw, about 0.10 MB gzip (6.8k triangles)                                                                         |
-| Per frame, start view (1280×800)                                                        | 55 draw calls (including the floor's field pass), about 87k triangles                                                    |
-| Per frame, busiest view measured (Experience table with the About scenes also in frame) | 288 draw calls, about 214k triangles                                                                                     |
+| Item                                                                                    | Size                                                                                                                                            |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| JavaScript (all chunks, gzip)                                                           | about 400 KB, of which about 205 KB is Three.js                                                                                                 |
+| Player model `hacker.glb`                                                               | 1.65 MB raw, about 0.92 MB gzip                                                                                                                 |
+| Other player tiers                                                                      | see the tier table under "Regenerating the character"; only one tier is downloaded per visit unless the visitor switches                        |
+| Glyph-figure model `hacker-glyph.glb`                                                   | 0.20 MB raw, about 0.10 MB gzip (6.8k triangles)                                                                                                |
+| Per frame, start view (1280×800)                                                        | 67 draw calls (including the floor's field pass), about 92k triangles                                                                           |
+| Per frame, busiest view measured (Experience table with the About scenes also in frame) | 288 draw calls, about 214k triangles, measured before the résumé scenes, which add up to 16 calls and about 5k triangles where they are in view |
 
 Frame rate was **not** measured on real hardware: the test browser here renders on a software GPU, so its numbers say nothing about real devices.
 

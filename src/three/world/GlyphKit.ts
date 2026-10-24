@@ -1,5 +1,6 @@
 import { THEME } from "@/theme/theme";
 import {
+  AdditiveBlending,
   BackSide,
   Color,
   DoubleSide,
@@ -30,6 +31,9 @@ import { GLSL_STREAM } from "../effects/AsciiRain";
  *   image   — a texture turned into ASCII art per cell (Anonymous mask, canvas)
  *   screen  — falling green code (monitors, laptops)
  *   water   — animated wave glyphs (the pool)
+ *   sprites — instanced camera-facing glyph characters (data packets)
+ *   orbs    — instanced glowing spheres covered in code glyphs (routing queries)
+ *   track   — dashed light strip on the floor that flows along its length
  */
 
 const R = ATLAS_RAMP_LENGTH.toFixed(1);
@@ -283,6 +287,135 @@ void main() {
 `;
 
 /** Inverted-hull silhouette: back faces pushed out along the normal. */
+/**
+ * Instanced glyph sprites: each instance is a camera-facing quad showing one
+ * code glyph (per-instance `aGlyph`) in its instance colour, with a soft halo
+ * and a thin square frame. Drawn additively, so hidden instances (scale 0) and
+ * black pixels cost nothing visible.
+ */
+const spriteVertex = /* glsl */ `
+attribute float aGlyph;
+varying vec2 vUv;
+varying vec3 vColor;
+varying float vGlyph;
+varying float vDepth;
+void main() {
+  vUv = uv;
+  vGlyph = aGlyph;
+#ifdef USE_INSTANCING_COLOR
+  vColor = instanceColor;
+#else
+  vColor = vec3(1.0);
+#endif
+  vec4 mv = viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0);
+  vDepth = -mv.z;
+  gl_Position = projectionMatrix * mv;
+}
+`;
+
+const spriteFragment = /* glsl */ `
+${GLSL_ATLAS_UV}
+uniform sampler2D uAtlas;
+uniform vec3 uFog;
+uniform float uFogNear;
+uniform float uFogFar;
+varying vec2 vUv;
+varying vec3 vColor;
+varying float vGlyph;
+varying float vDepth;
+void main() {
+  vec2 c = vUv * 2.0 - 1.0;
+  vec2 g = (vUv - 0.17) / 0.66;
+  float glyph = 0.0;
+  if (all(greaterThan(g, vec2(0.0))) && all(lessThan(g, vec2(1.0)))) {
+    glyph = texture(uAtlas, atlasUv(vGlyph, g)).r;
+  }
+  float box = max(abs(c.x), abs(c.y));
+  float frame = smoothstep(0.8, 0.86, box) * (1.0 - smoothstep(0.9, 0.96, box));
+  float halo = exp(-dot(c, c) * 2.6) * 0.32;
+  vec3 color = vColor * (glyph * 1.7 + halo + frame * 0.55);
+  color *= 1.0 - smoothstep(uFogNear, uFogFar, vDepth);
+  gl_FragColor = vec4(color, 1.0);
+  #include <colorspace_fragment>
+}
+`;
+
+/** Instanced glowing spheres; glyph cells are fixed to each sphere, so they visibly roll. */
+const orbVertex = /* glsl */ `
+varying vec3 vLocal;
+varying vec3 vLocalNormal;
+varying vec3 vWorld;
+varying vec3 vNormal;
+varying vec3 vColor;
+varying float vDepth;
+void main() {
+  vLocal = position;
+  vLocalNormal = normal;
+#ifdef USE_INSTANCING_COLOR
+  vColor = instanceColor;
+#else
+  vColor = vec3(1.0);
+#endif
+  mat4 m = modelMatrix * instanceMatrix;
+  vec4 world = m * vec4(position, 1.0);
+  vWorld = world.xyz;
+  vNormal = normalize(mat3(m) * normal);
+  vec4 mv = viewMatrix * world;
+  vDepth = -mv.z;
+  gl_Position = projectionMatrix * mv;
+}
+`;
+
+const orbFragment = /* glsl */ `
+${GLSL_COMMON}
+uniform float uCell;
+varying vec3 vLocal;
+varying vec3 vLocalNormal;
+varying vec3 vWorld;
+varying vec3 vNormal;
+varying vec3 vColor;
+varying float vDepth;
+void main() {
+  vec3 n = normalize(vNormal);
+  vec3 v = normalize(cameraPosition - vWorld);
+  float rim = pow(1.0 - max(dot(n, v), 0.0), 2.0);
+  vec3 a = abs(vLocalNormal);
+  vec2 q = (a.y > max(a.x, a.z) ? vLocal.xz : (a.x > a.z ? vLocal.zy : vLocal.xy)) / uCell;
+  vec2 cell = floor(q);
+  float index = ${CODE_START} + floor(hash12(cell + floor(uTime * uMotion * 3.0)) * ${CODE_LENGTH});
+  float glyph = glyphAt(index, fract(q), q);
+  vec3 color = vColor * (0.22 + glyph * 1.1 + rim * 0.9);
+  gl_FragColor = vec4(applyFog(color, vDepth), 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}
+`;
+
+/**
+ * Floor strip: `uv.x` is the distance along the track in metres, `uv.y`
+ * runs across it. Dashes flow along the track at `uSpeed` m/s.
+ */
+const trackFragment = /* glsl */ `
+uniform vec3 uColor;
+uniform float uTime;
+uniform float uMotion;
+uniform float uSpeed;
+uniform float uIntensity;
+uniform vec3 uFog;
+uniform float uFogNear;
+uniform float uFogFar;
+varying vec2 vUv;
+varying float vDepth;
+void main() {
+  float across = 1.0 - smoothstep(0.25, 0.5, abs(vUv.y - 0.5));
+  float dash = step(0.55, fract(vUv.x * 2.2 - uTime * uMotion * uSpeed * 2.2));
+  float level = across * (0.18 + 0.5 * dash) * uIntensity;
+  vec3 color = uColor * level * (1.0 - smoothstep(uFogNear, uFogFar, vDepth));
+  gl_FragColor = vec4(color, 1.0);
+  #include <colorspace_fragment>
+}
+`;
+
 const outlineVertex = /* glsl */ `
 uniform float uWidth;
 varying float vDepth;
@@ -364,6 +497,11 @@ export class GlyphKit {
     this.shared.uMotion.value = reduced ? 0.15 : 1;
   }
 
+  /** Animation speed factor (0.15 with reduced motion), for motion driven from JS. */
+  get motion(): number {
+    return this.shared.uMotion.value;
+  }
+
   solid(options: SolidOptions = {}): ShaderMaterial {
     return new ShaderMaterial({
       vertexShader: solidVertex,
@@ -429,6 +567,59 @@ export class GlyphKit {
         uSpeed: { value: speed },
         uFade: { value: 1 },
       },
+    });
+  }
+
+  /** For an InstancedMesh of quads with a per-instance `aGlyph` attribute and instance colours. */
+  sprites(): ShaderMaterial {
+    return new ShaderMaterial({
+      vertexShader: spriteVertex,
+      fragmentShader: spriteFragment,
+      uniforms: {
+        uAtlas: this.shared.uAtlas,
+        uFog: this.shared.uFog,
+        uFogNear: this.shared.uFogNear,
+        uFogFar: this.shared.uFogFar,
+      },
+      transparent: true,
+      depthWrite: false,
+      blending: AdditiveBlending,
+      toneMapped: false,
+    });
+  }
+
+  /** For an InstancedMesh of unit spheres with instance colours. `cell` is in sphere units. */
+  orbs(cell = 0.36): ShaderMaterial {
+    return new ShaderMaterial({
+      vertexShader: orbVertex,
+      fragmentShader: orbFragment,
+      uniforms: {
+        ...this.shared,
+        uCell: { value: cell },
+      },
+    });
+  }
+
+  /** Flowing dashed strip on the floor (see `buildTrack`). */
+  track(color: ColorRepresentation, speed = 1, intensity = 1): ShaderMaterial {
+    return new ShaderMaterial({
+      vertexShader: uvVertex,
+      fragmentShader: trackFragment,
+      side: DoubleSide,
+      uniforms: {
+        uColor: { value: new Color(color) },
+        uTime: this.shared.uTime,
+        uMotion: this.shared.uMotion,
+        uSpeed: { value: speed },
+        uIntensity: { value: intensity },
+        uFog: this.shared.uFog,
+        uFogNear: this.shared.uFogNear,
+        uFogFar: this.shared.uFogFar,
+      },
+      transparent: true,
+      depthWrite: false,
+      blending: AdditiveBlending,
+      toneMapped: false,
     });
   }
 

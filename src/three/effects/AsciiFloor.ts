@@ -10,6 +10,7 @@ import {
   ShaderMaterial,
   Vector2,
   Vector3,
+  Vector4,
   WebGLRenderTarget,
   type Texture,
   type WebGLRenderer,
@@ -25,6 +26,8 @@ import {
 } from "./AsciiAtlas";
 
 export const MAX_FLOOR_CARDS = 5;
+/** Footprints kept for the floor's step ripples (a ring buffer). */
+const MAX_STEPS = 16;
 
 /** Corners of the view in normalised device coordinates. */
 const FIT_CORNERS = [
@@ -56,7 +59,9 @@ void main() {
  *   - circuit traces on a Manhattan lattice with pulses running along them,
  *   - concentric emitter rings and light pools around each card (cyan),
  *   - the NZSWE logo near spawn, written in neon-green glyphs,
- *   - a soft glow and blob shadow under the player.
+ *   - a soft glow and blob shadow under the player,
+ *   - footprints: each step brightens the glyphs under it and sends out a
+ *     ring that fades (sprinting leaves a longer-lived trail).
  *
  * Everything except the glyph shape, the play-area edge and the blob shadow
  * is constant across a cell, and a cell covers hundreds of screen pixels. So
@@ -88,6 +93,10 @@ uniform vec2 uLogoSize;
 uniform vec3 uPlayer;
 uniform vec3 uCardPos[${MAX_FLOOR_CARDS}];
 uniform float uCardFocus[${MAX_FLOOR_CARDS}];
+/** Footprints: (x, z, time placed, lifetime in s); lifetime 0 = unused. */
+uniform vec4 uSteps[${MAX_STEPS}];
+/** Real (not motion-scaled) time, for footprint ages. */
+uniform float uClock;
 
 ${GLSL_HASH}
 
@@ -135,6 +144,25 @@ void main() {
   // --- player glow ----------------------------------------------------------
   float dp = distance(cw, uPlayer.xz);
   signal += exp(-dp * dp * 0.5) * 0.22;
+
+  // --- footprints: a bright print and an expanding, fading ring --------------
+  float stepGlow = 0.0;
+  for (int i = 0; i < ${MAX_STEPS}; i++) {
+    vec4 fp = uSteps[i];
+    float age = uClock - fp.z;
+    if (fp.w <= 0.0 || age < 0.0 || age > fp.w) continue;
+    float d = distance(cw, fp.xy);
+    if (d > 2.4) continue;
+    float life = 1.0 - age / fp.w;
+    float print = exp(-d * d * 10.0) * life;
+    float radius = 0.15 + age * 1.3;
+    float ring = (1.0 - smoothstep(0.05, 0.22, abs(d - radius))) * life * life * 0.7
+      * step(0.5, uMotion) * (1.0 - smoothstep(1.5, 2.2, radius));
+    stepGlow += print + ring;
+  }
+  stepGlow = min(stepGlow, 1.0);
+  signal += stepGlow * 0.8;
+  cyanWeight = max(cyanWeight, min(1.0, stepGlow * 1.8));
   signal = clamp(signal, 0.0, 1.0);
 
   // --- logo written in green glyphs ------------------------------------------
@@ -148,7 +176,7 @@ void main() {
   float flicker = floor(t * (0.6 + hash12(cell) * 1.2));
   float codeGlyph = ${ATLAS_CODE_START.toFixed(1)} + floor(hash12(cell + flicker) * ${ATLAS_CODE_LENGTH.toFixed(1)});
   float rampGlyph = clamp(floor(signal * ${(ATLAS_RAMP_LENGTH - 1).toFixed(1)} + 0.4), 0.0, ${(ATLAS_RAMP_LENGTH - 1).toFixed(1)});
-  float isCode = max(max(trace, node), step(0.5, logo));
+  float isCode = max(max(max(trace, node), step(0.5, logo)), step(0.3, stepGlow));
   float index = mix(rampGlyph, codeGlyph, isCode);
 
   gl_FragColor = vec4(signal, cyanWeight, logo, (index + ${GLYPH_FLAG.toFixed(1)} * trace) / 255.0);
@@ -249,6 +277,11 @@ export class AsciiFloor {
   private readonly fieldMaterial: ShaderMaterial;
   private readonly fieldOffset: number;
   private readonly fieldSize: number;
+  private readonly steps = Array.from(
+    { length: MAX_STEPS },
+    () => new Vector4(0, 0, 0, 0),
+  );
+  private nextStep = 0;
 
   constructor(atlas: Texture, logo: FloorLogo) {
     this.cardPositions = Array.from(
@@ -292,6 +325,8 @@ export class AsciiFloor {
         uLogoSize: { value: new Vector2(logo.size.width, logo.size.height) },
         uCardPos: { value: this.cardPositions },
         uCardFocus: { value: this.cardFocus },
+        uSteps: { value: this.steps },
+        uClock: { value: 0 },
       },
     });
     const quad = new Mesh(new PlaneGeometry(2, 2), this.fieldMaterial);
@@ -332,8 +367,18 @@ export class AsciiFloor {
     this.cardPositions[index]?.copy(position);
   }
 
+  /**
+   * Leaves a footprint at (x, z) that fades over `life` seconds. `time` is
+   * the same clock passed to `update`.
+   */
+  addStep(x: number, z: number, time: number, life: number) {
+    this.steps[this.nextStep].set(x, z, time, life);
+    this.nextStep = (this.nextStep + 1) % MAX_STEPS;
+  }
+
   update(time: number, player: Vector3, focus: readonly number[]) {
     this.fieldMaterial.uniforms.uTime.value = time;
+    this.fieldMaterial.uniforms.uClock.value = time;
     (this.mesh.material.uniforms.uPlayer.value as Vector3).copy(player);
     for (let i = 0; i < MAX_FLOOR_CARDS; i++) this.cardFocus[i] = focus[i] ?? 0;
   }

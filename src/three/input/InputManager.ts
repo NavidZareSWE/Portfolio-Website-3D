@@ -23,6 +23,12 @@ const CONTROLS: readonly ControlKey[] = [
   "Space",
 ];
 
+/**
+ * On-screen ways to hold the action: the touch action button, the
+ * interaction prompt, and the card itself (pressed with a mouse or a finger).
+ */
+export type VirtualActionSource = "button" | "prompt" | "card";
+
 /** Sprint modifier. Not a gameplay key: it is never prevented (Shift+Tab must keep working). */
 const SPRINT_CODES = new Set(["ShiftLeft", "ShiftRight"]);
 
@@ -69,7 +75,8 @@ export class InputManager {
   private sprintDown = new Set<string>();
   private virtualMoveX = 0;
   private virtualMoveY = 0;
-  private virtualAction = false;
+  /** On-screen controls holding the action down (button, prompt, card). */
+  private readonly virtualAction = new Set<VirtualActionSource>();
 
   private target: Window | null = null;
 
@@ -136,7 +143,7 @@ export class InputManager {
     this.pressEdges.clear();
     this.virtualMoveX = 0;
     this.virtualMoveY = 0;
-    this.virtualAction = false;
+    this.virtualAction.clear();
     this.refreshControls();
   }
 
@@ -148,7 +155,7 @@ export class InputManager {
     this.pressEdges.clear();
     this.virtualMoveX = 0;
     this.virtualMoveY = 0;
-    this.virtualAction = false;
+    this.virtualAction.clear();
     this.refreshControls();
   }
 
@@ -159,9 +166,16 @@ export class InputManager {
     this.virtualMoveY = y;
   }
 
-  setVirtualAction(pressed: boolean) {
-    if (pressed && !this.virtualAction) this.pressEdges.add("Space");
-    this.virtualAction = pressed;
+  /**
+   * Holds or releases the action (Space) from an on-screen control. Each
+   * control is tracked separately, so releasing one never cancels a hold
+   * that another control (or the Space key) still has.
+   */
+  setVirtualAction(pressed: boolean, source: VirtualActionSource = "button") {
+    const wasHeld = this.virtualAction.size > 0;
+    if (pressed) this.virtualAction.add(source);
+    else this.virtualAction.delete(source);
+    if (pressed && !wasHeld) this.pressEdges.add("Space");
     this.refreshControls();
   }
 
@@ -216,7 +230,7 @@ export class InputManager {
 
   private refreshControls() {
     for (const control of CONTROLS) {
-      let pressed = control === "Space" && this.virtualAction;
+      let pressed = control === "Space" && this.virtualAction.size > 0;
       if (!pressed) {
         for (const code of this.physicalDown) {
           if (KEY_MAP[code] === control) {

@@ -14,15 +14,20 @@ import {
   RingGeometry,
   ShaderMaterial,
   Shape,
+  Vector2,
   Vector3,
+  type CanvasTexture,
 } from "three";
 import type { SectionMeta } from "@/content/sections";
 import type { SectionId } from "@/types";
 import { CARD } from "../config";
+import { CRISP_LAYER } from "../render/CrispComposite";
 import { YAW_FACING_CAMERA } from "../utils/math";
 import {
   CARD_CUT_FRACTION,
+  DEFAULT_FACE_DETAIL,
   createCardFace,
+  type CardFaceDetail,
   type CardText,
   type PortraitImage,
 } from "./cardFace";
@@ -140,6 +145,9 @@ export function createSharedCardResources(): SharedCardResources {
   };
 }
 
+/** Width of the hold-progress stroke along the card's edge, in metres (minimum; see the shader). */
+const STROKE_WIDTH = 0.075;
+
 const cardVertex = /* glsl */ `
 varying vec2 vUv;
 void main() {
@@ -155,9 +163,12 @@ uniform float uMotion;
 uniform float uFocus;
 uniform float uProgress;
 uniform float uSeed;
+uniform float uBias;
 uniform vec3 uAccent;
 uniform vec4 uFooterRect;
 uniform vec4 uProgressRect;
+uniform vec2 uCardSize;
+uniform float uCut;
 varying vec2 vUv;
 
 float hash11(float p) { p = fract(p * 0.1031); p *= p + 33.33; p *= p + p; return fract(p); }
@@ -168,27 +179,43 @@ float inRect(vec2 uv, vec4 r) {
   return a.x * a.y * b.x * b.y;
 }
 
+// Signed distance (metres) to the card's octagonal outline; negative inside.
+float octagon(vec2 p) {
+  vec2 q = abs(p);
+  vec2 h = uCardSize * 0.5;
+  float box = max(q.x - h.x, q.y - h.y);
+  float corner = (q.x + q.y - (h.x + h.y - uCut)) * 0.70710678;
+  return max(box, corner);
+}
+
 void main() {
   float t = uTime * uMotion;
   vec2 uv = vUv;
+  // Screen-space size of one texel step, so the effects below never blur
+  // or alias the face more than a fraction of a screen pixel.
+  float pixelU = fwidth(vUv.x);
+  float scanCycles = fwidth(vUv.y) * 520.0 / 6.2831853;
 
   // Restrained glitch: rare horizontal slice offsets.
   float glitchOn = step(0.985, hash11(floor(t * 9.0) + uSeed * 17.0)) * uMotion;
   float slice = floor(uv.y * 36.0);
   uv.x += (hash11(slice + floor(t * 30.0)) - 0.5) * 0.025 * glitchOn * step(0.6, hash11(slice * 3.1 + uSeed));
 
-  vec4 tex = texture(uMap, uv);
-  float fringe = 0.0018 + glitchOn * 0.004;
-  float red = texture(uMap, uv + vec2(fringe, 0.0)).r;
-  float blue = texture(uMap, uv - vec2(fringe, 0.0)).b;
+  vec4 tex = texture(uMap, uv, uBias);
+  // Colour fringe: at most 0.6 screen pixels, wider only during a glitch.
+  float fringe = min(0.0018, pixelU * 0.6) + glitchOn * 0.004;
+  float red = texture(uMap, uv + vec2(fringe, 0.0), uBias).r;
+  float blue = texture(uMap, uv - vec2(fringe, 0.0), uBias).b;
   vec3 color = vec3(mix(tex.r, red, 0.6), tex.g, mix(tex.b, blue, 0.6));
 
   // The footer prompt is dim until the player is in range.
   float footer = inRect(vUv, uFooterRect);
   color *= mix(1.0, mix(0.35, 1.2, uFocus), footer);
 
-  // Scanlines and a slow sweep band.
-  float scan = 0.9 + 0.1 * sin(vUv.y * 520.0 - t * 3.0);
+  // Scanlines (faded out when they get finer than about two screen pixels,
+  // where they would only alias) and a slow sweep band.
+  float scanAmp = 0.1 * (1.0 - smoothstep(0.25, 0.5, scanCycles));
+  float scan = 0.9 + scanAmp * sin(vUv.y * 520.0 - t * 3.0);
   float sweep = exp(-pow((vUv.y - fract(t * 0.11 + uSeed)) * 18.0, 2.0));
   color = color * scan + uAccent * sweep * 0.25 * tex.a;
   color *= 0.88 + 0.3 * uFocus;
@@ -198,6 +225,26 @@ void main() {
   float filled = step(vUv.x, uProgressRect.x + uProgressRect.z * uProgress);
   color = mix(color, uAccent * 1.6, bar * filled);
   float alpha = max(tex.a, bar * filled);
+
+  // The same progress as a stroke along the card's edge, filling clockwise
+  // from the top centre. While a hold is in progress the rest of the edge is
+  // dimmed, so the bright part reads as a fill.
+  if (uProgress > 0.0) {
+    vec2 p = (vUv - 0.5) * uCardSize;
+    float d = octagon(p);
+    float aa = fwidth(d);
+    // At least about five screen pixels wide, so it reads on a small screen too.
+    float width = max(${STROKE_WIDTH.toFixed(3)}, aa * 5.0);
+    float band = smoothstep(-width - aa, -width + aa, d) * (1.0 - smoothstep(-aa, 0.0, d));
+    float around = fract(atan(p.x, p.y) / 6.2831853 + 1.0);
+    float lit = 1.0 - smoothstep(uProgress - 0.004, uProgress, around);
+    float head = exp(-pow((around - uProgress) * 45.0, 2.0)) * step(uProgress, 0.999);
+    float inner = exp(min(d, 0.0) * 16.0) * (1.0 - band);
+    color = mix(color, color * 0.25 + uAccent * 0.06, band * (1.0 - lit));
+    color = mix(color, vec3(0.8, 1.0, 1.0) * 2.0, band * lit);
+    color += uAccent * inner * (lit * 0.45 + head * 1.2) + vec3(1.0) * band * head;
+    alpha = max(alpha, max(band, inner * (lit * 0.5 + head)));
+  }
 
   gl_FragColor = vec4(color, alpha);
   #include <colorspace_fragment>
@@ -252,6 +299,16 @@ export class HolographicCard {
   private readonly seed: number;
   private readonly ringBase = new Color(THEME.blue);
   private readonly ringHot = new Color(THEME.cyan);
+  /** Mesh that shows the face texture (the target for pointer holds). */
+  readonly faceMesh: Mesh;
+  private readonly meta: SectionMeta;
+  private readonly faceSource: {
+    logoSvg: string | null;
+    portrait: PortraitImage | null;
+    maxAnisotropy: number;
+    text: CardText;
+  };
+  private faceDetail: CardFaceDetail;
 
   constructor(
     meta: SectionMeta,
@@ -263,8 +320,13 @@ export class HolographicCard {
       maxAnisotropy: number;
       text: CardText;
     },
+    detail: CardFaceDetail = DEFAULT_FACE_DETAIL,
+    mipBias = 0,
   ) {
     this.id = meta.id;
+    this.meta = meta;
+    this.faceSource = face;
+    this.faceDetail = detail;
     this.seed = (parseInt(meta.index, 10) * 0.173) % 1;
     this.anchor = new Vector3(position.x, 0, position.z);
     this.focusPoint = new Vector3(position.x, CARD.centerY, position.z);
@@ -278,6 +340,7 @@ export class HolographicCard {
       face.logoSvg,
       face.portrait,
       face.maxAnisotropy,
+      detail,
     );
 
     this.faceMaterial = new ShaderMaterial({
@@ -290,9 +353,12 @@ export class HolographicCard {
         uFocus: { value: 0 },
         uProgress: { value: 0 },
         uSeed: { value: this.seed },
+        uBias: { value: mipBias },
         uAccent: { value: accent },
         uFooterRect: { value: footerRect },
         uProgressRect: { value: progressRect },
+        uCardSize: { value: new Vector2(CARD.width, CARD.height) },
+        uCut: { value: CARD.width * CARD_CUT_FRACTION },
       },
       transparent: true,
       depthWrite: false,
@@ -348,8 +414,38 @@ export class HolographicCard {
     const faceMesh = new Mesh(shared.face, this.faceMaterial);
     faceMesh.position.z = CARD.depth / 2 + 0.014;
     faceMesh.renderOrder = 4;
+    // Drawn in the full-resolution pass when the world renders below it.
+    faceMesh.layers.set(CRISP_LAYER);
+    faceMesh.userData.cardId = meta.id;
+    this.faceMesh = faceMesh;
     this.panel.add(halo, body, rim, faceMesh);
     this.group.add(this.panel);
+  }
+
+  /**
+   * Redraws the face at another resolution or ASCII density (the player-model
+   * tier or the screen changed). The previous texture is released.
+   */
+  setDetail(detail: CardFaceDetail, mipBias: number) {
+    const u = this.faceMaterial.uniforms;
+    u.uBias.value = mipBias;
+    if (
+      detail.scale === this.faceDetail.scale &&
+      detail.cell === this.faceDetail.cell
+    )
+      return;
+    this.faceDetail = detail;
+    const face = this.faceSource;
+    const { texture } = createCardFace(
+      this.meta,
+      face.text,
+      face.logoSvg,
+      face.portrait,
+      face.maxAnisotropy,
+      detail,
+    );
+    (u.uMap.value as CanvasTexture).dispose();
+    u.uMap.value = texture;
   }
 
   /** @param focus 0..1 proximity/selection emphasis, @param progress 0..1 hold progress */

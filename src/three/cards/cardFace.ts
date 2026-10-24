@@ -27,6 +27,16 @@ const CELL_H = 12;
 const RAMP = " .:-=+*o0#%@";
 const PAD = 34;
 
+/** Resolution and ASCII density of a face (see quality/TextureDetail.ts). */
+export interface CardFaceDetail {
+  /** Canvas pixels per layout pixel (the layout is 768 x 1120). */
+  scale: number;
+  /** ASCII cell size relative to the 8 x 12 px base (smaller = more characters). */
+  cell: number;
+}
+
+export const DEFAULT_FACE_DETAIL: CardFaceDetail = { scale: 1, cell: 1 };
+
 export interface CardFaceResult {
   texture: CanvasTexture;
   footerRect: Vector4;
@@ -238,18 +248,28 @@ export function createCardFace(
   logoSvg: string | null,
   portrait: PortraitImage | null,
   maxAnisotropy: number,
+  detail: CardFaceDetail = DEFAULT_FACE_DETAIL,
 ): CardFaceResult {
+  // Everything below is laid out in 768 x 1120 layout pixels; both canvases
+  // are scaled by S, so lines and text are drawn at the full canvas resolution.
+  // shadowBlur ignores the transform, so blur radii are multiplied by S.
   const W = CARD_FACE_W;
   const H = CARD_FACE_H;
+  const S = detail.scale;
+  const PW = Math.round(W * S);
+  const PH = Math.round(H * S);
+  const cellW = CELL_W * detail.cell;
+  const cellH = CELL_H * detail.cell;
   const cut = Math.round(W * CARD_CUT_FRACTION);
   const random = createRandom(parseInt(meta.index, 10) * 7919);
   const hex = sectionHexCode(meta);
 
   // ---------------- art layer (grey-scale) ----------------
   const art = document.createElement("canvas");
-  art.width = W;
-  art.height = H;
-  const a = art.getContext("2d")!;
+  art.width = PW;
+  art.height = PH;
+  const a = art.getContext("2d", { willReadFrequently: true })!;
+  a.scale(PW / W, PH / H);
   a.fillStyle = "#000";
   a.fillRect(0, 0, W, H);
 
@@ -322,9 +342,10 @@ export function createCardFace(
 
   // ---------------- convert to ASCII ----------------
   const out = document.createElement("canvas");
-  out.width = W;
-  out.height = H;
+  out.width = PW;
+  out.height = PH;
   const ctx = out.getContext("2d")!;
+  ctx.scale(PW / W, PH / H);
 
   // Translucent body inside the octagon.
   const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -334,37 +355,65 @@ export function createCardFace(
   ctx.fillStyle = bg;
   ctx.fill();
 
-  const pixels = a.getImageData(0, 0, W, H).data;
-  ctx.font = `700 ${CELL_H - 1}px ${FONTS.mono}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  for (let cy = 0; cy < H; cy += CELL_H) {
-    for (let cx = 0; cx < W; cx += CELL_W) {
+  // One glyph per cell, its density picked from the art's luminance. The
+  // glyphs are rasterised once and copied into a pixel buffer (a fillText
+  // per cell is far slower once cells are small and the canvas is large),
+  // then the buffer is drawn over the body in one call.
+  const pixels = a.getImageData(0, 0, PW, PH).data;
+  const glyphs = rasteriseGlyphs(cellW * S, cellH * S, detail.cell * S);
+  const ascii = new ImageData(PW, PH);
+  const buffer = ascii.data;
+  // About 4 x 6 luminance samples per cell, whatever the scale.
+  const stepX = Math.max(1, Math.floor((cellW * S) / 4));
+  const stepY = Math.max(1, Math.floor((cellH * S) / 6));
+  for (let cy = 0; cy < H; cy += cellH) {
+    for (let cx = 0; cx < W; cx += cellW) {
       let sum = 0;
       let n = 0;
-      for (let yy = cy; yy < Math.min(H, cy + CELL_H); yy += 3) {
-        for (let xx = cx; xx < Math.min(W, cx + CELL_W); xx += 2) {
-          sum += pixels[(yy * W + xx) * 4];
+      const y0 = Math.round(cy * S);
+      const x0 = Math.round(cx * S);
+      const y1 = Math.min(PH, Math.round((cy + cellH) * S));
+      const x1 = Math.min(PW, Math.round((cx + cellW) * S));
+      for (let yy = y0; yy < y1; yy += stepY) {
+        for (let xx = x0; xx < x1; xx += stepX) {
+          sum += pixels[(yy * PW + xx) * 4];
           n++;
         }
       }
+      if (n === 0) continue;
       const lum = sum / n / 255;
       if (lum < 0.04) continue;
       const level = Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length));
-      const ch = RAMP[level] === " " ? "." : RAMP[level];
       const alpha = Math.min(1, 0.25 + lum * 1.1);
-      ctx.fillStyle =
-        lum > 0.6
-          ? `rgba(150, 245, 255, ${alpha})`
-          : `rgba(70, 190, 255, ${alpha})`;
-      ctx.fillText(ch, cx + CELL_W / 2, cy + CELL_H / 2 + 1);
+      const [r, g, b] = lum > 0.6 ? [150, 245, 255] : [70, 190, 255];
+      // Glyph centred on the cell centre.
+      const centreX = Math.round((cx + cellW / 2) * S);
+      const centreY = Math.round((cy + cellH / 2) * S);
+      stampGlyph(
+        buffer,
+        PW,
+        PH,
+        glyphs,
+        level,
+        centreX,
+        centreY,
+        r,
+        g,
+        b,
+        alpha,
+      );
     }
   }
+  const asciiCanvas = document.createElement("canvas");
+  asciiCanvas.width = PW;
+  asciiCanvas.height = PH;
+  asciiCanvas.getContext("2d")!.putImageData(ascii, 0, 0);
+  ctx.drawImage(asciiCanvas, 0, 0, W, H);
 
   // Thin crisp edge so the silhouette stays sharp at a distance.
   ctx.save();
   ctx.shadowColor = "rgba(95, 240, 255, 0.9)";
-  ctx.shadowBlur = 14;
+  ctx.shadowBlur = 14 * S;
   ctx.strokeStyle = THEME.cyan;
   ctx.lineWidth = 3;
   octagonPath(ctx, 6, 6, W - 12, H - 12, cut);
@@ -374,7 +423,7 @@ export function createCardFace(
   // ---------------- crisp text layer ----------------
   const glow = (blur: number) => {
     ctx.shadowColor = "rgba(95, 240, 255, 0.85)";
-    ctx.shadowBlur = blur;
+    ctx.shadowBlur = blur * S;
   };
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
@@ -409,7 +458,7 @@ export function createCardFace(
   ctx.fillStyle = "#e6fdff";
   translated(() => {
     ctx.shadowColor = "rgba(95, 240, 255, 0.85)";
-    ctx.shadowBlur = 18;
+    ctx.shadowBlur = 18 * S;
     ctx.font = `800 ${fitText(ctx, title, W * 0.6, text.rtl ? 72 : 84, TF)}px ${TF}`;
     ctx.fillText(title, PAD + 36, 128);
   });
@@ -485,7 +534,7 @@ export function createCardFace(
   translated(() => {
     ctx.textAlign = "center";
     ctx.shadowColor = "rgba(95, 240, 255, 0.85)";
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 10 * S;
     fitted(text.prompt, 800, 26, W - (PAD + 40) * 2);
     ctx.fillText(text.prompt, W / 2, footerY);
   });
@@ -527,4 +576,81 @@ function fitText(
     size -= 4;
   }
   return size;
+}
+
+/** Coverage masks (0..255) of the RAMP glyphs at one cell size, centred in a box. */
+interface GlyphMasks {
+  width: number;
+  height: number;
+  masks: Uint8Array[];
+}
+
+function rasteriseGlyphs(
+  cellWidth: number,
+  cellHeight: number,
+  baselineShift: number,
+): GlyphMasks {
+  const width = Math.ceil(cellWidth) + 4;
+  const height = Math.ceil(cellHeight) + 4;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+  ctx.font = `700 ${cellHeight - cellHeight / CELL_H}px ${FONTS.mono}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#fff";
+  const masks = [...RAMP].map((char) => {
+    ctx.clearRect(0, 0, width, height);
+    // A space would leave the cell empty; the lowest level is a dot instead.
+    ctx.fillText(
+      char === " " ? "." : char,
+      width / 2,
+      height / 2 + baselineShift,
+    );
+    const data = ctx.getImageData(0, 0, width, height).data;
+    const mask = new Uint8Array(width * height);
+    for (let i = 0; i < mask.length; i++) mask[i] = data[i * 4 + 3];
+    return mask;
+  });
+  return { width, height, masks };
+}
+
+/** Draws one glyph mask into an RGBA buffer (source-over, straight alpha). */
+function stampGlyph(
+  buffer: Uint8ClampedArray,
+  bufferWidth: number,
+  bufferHeight: number,
+  glyphs: GlyphMasks,
+  level: number,
+  centreX: number,
+  centreY: number,
+  r: number,
+  g: number,
+  b: number,
+  alpha: number,
+) {
+  const mask = glyphs.masks[level];
+  const left = centreX - (glyphs.width >> 1);
+  const top = centreY - (glyphs.height >> 1);
+  for (let y = 0; y < glyphs.height; y++) {
+    const by = top + y;
+    if (by < 0 || by >= bufferHeight) continue;
+    for (let x = 0; x < glyphs.width; x++) {
+      const coverage = mask[y * glyphs.width + x];
+      if (coverage === 0) continue;
+      const bx = left + x;
+      if (bx < 0 || bx >= bufferWidth) continue;
+      const i = (by * bufferWidth + bx) * 4;
+      const sa = (coverage / 255) * alpha;
+      const da = buffer[i + 3] / 255;
+      const oa = sa + da * (1 - sa);
+      const keep = (da * (1 - sa)) / oa;
+      const take = sa / oa;
+      buffer[i] = r * take + buffer[i] * keep;
+      buffer[i + 1] = g * take + buffer[i + 1] * keep;
+      buffer[i + 2] = b * take + buffer[i + 2] * keep;
+      buffer[i + 3] = oa * 255;
+    }
+  }
 }

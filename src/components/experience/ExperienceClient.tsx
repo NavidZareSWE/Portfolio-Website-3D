@@ -61,6 +61,14 @@ function buildSceneLabels(t: TFunction, rtl: boolean): SceneLabels {
       calling: t("world.calling", { ns: "ui" }),
       underConstruction: t("world.underConstruction", { ns: "ui" }),
       build: t("world.build", { ns: "ui" }),
+      server: t("world.server", { ns: "ui" }),
+      database: t("world.database", { ns: "ui" }),
+      scanner: t("world.scanner", { ns: "ui" }),
+      routing: t("world.routing", { ns: "ui" }),
+      routingTradeoff: t("world.routingTradeoff", { ns: "ui" }),
+      smallModel: t("world.smallModel", { ns: "ui" }),
+      largeModel: t("world.largeModel", { ns: "ui" }),
+      detected: t("world.detected", { ns: "ui" }),
     },
   };
 }

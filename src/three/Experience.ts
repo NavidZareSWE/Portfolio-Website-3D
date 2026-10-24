@@ -1,6 +1,7 @@
 import {
   ACESFilmicToneMapping,
   Group,
+  Raycaster,
   SRGBColorSpace,
   Vector2,
   WebGLRenderer,
@@ -22,7 +23,7 @@ import {
   parseLogoShapes,
 } from "./character/logo";
 import { renderCharacterPortrait } from "./character/portrait";
-import { RENDER } from "./config";
+import { PLAYER, RENDER } from "./config";
 import { DEFAULT_LABELS, type SceneLabels } from "./labels";
 import {
   AdaptiveResolution,
@@ -41,6 +42,16 @@ import {
   type NetworkClass,
 } from "./quality/ModelDetail";
 import { DEV_OVERRIDES, IS_DEVELOPMENT } from "./quality/devOverrides";
+import {
+  sameCardDetail,
+  textureDetail,
+  type TextureDetail,
+} from "./quality/TextureDetail";
+import {
+  CRISP_LAYER,
+  CrispComposite,
+  shareLightsWithCrispLayer,
+} from "./render/CrispComposite";
 import { createAsciiAtlas } from "./effects/AsciiAtlas";
 import { FONTS } from "@/theme/theme";
 import { InputManager } from "./input/InputManager";
@@ -157,6 +168,22 @@ export class Experience {
   private readonly move = new Vector2();
   private readonly zeroMove = new Vector2();
   private readonly cardFocus: number[] = [];
+  /** Text resolution for the current tier and screen (quality/TextureDetail.ts). */
+  private textDetail: TextureDetail | null = null;
+  private composite: CrispComposite | null = null;
+  /** The world renders below the text's pixel ratio (two-pass composite). */
+  private compositeActive = false;
+  private detailTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Pointer holding a card face (mouse button or finger), if any. */
+  private cardPointerId: number | null = null;
+  private readonly raycaster = new Raycaster();
+  private readonly pointerNdc = new Vector2();
+  /** Last mouse position over the canvas, to refresh the cursor when the player moves. */
+  private lastMouse: { x: number; y: number } | null = null;
+  /** Distance walked since the last footprint, and which foot is next. */
+  private stepDistance = 0;
+  private stepSide = 1;
+  private wasOnFloor = true;
 
   constructor(
     private readonly container: HTMLElement,
@@ -232,6 +259,8 @@ export class Experience {
         `[experience] player model: ${tier} (${this.detail.source}); auto would pick ${decision.tier}: ${decision.reason}; renderer: ${profile?.renderer ?? "n/a"}`,
       );
     }
+    this.textDetail = this.computeTextDetail();
+    this.composite = new CrispComposite(profile?.antialias ? 4 : 0);
     const [model, glyph, maskTextures] = await Promise.all([
       loadCharacterModel(tier, signal),
       glyphLoad,
@@ -276,6 +305,10 @@ export class Experience {
     this.renderer?.setAnimationLoop(null);
     document.removeEventListener("visibilitychange", this.onVisibilityChange);
     this.resizeObserver?.disconnect();
+    if (this.detailTimer) clearTimeout(this.detailTimer);
+    this.detachPointer();
+    this.composite?.dispose();
+    this.composite = null;
     this.input.detach();
     this.events.clear();
     delete document.documentElement.dataset.quality;
@@ -297,6 +330,7 @@ export class Experience {
   setActiveSection(id: SectionId | null) {
     if (id === this.activeSection) return;
     this.activeSection = id;
+    this.updateCursor();
     const controller = this.controller;
     const interaction = this.interaction;
     // Whatever is held right now (e.g. the Space that opened the card) must be
@@ -362,6 +396,8 @@ export class Experience {
       this.animation?.setRig(next.rig);
       this.syncCharacterTransform();
       this.detail = { ...this.detail, tier, loading: null };
+      // Card faces and the text pass follow the tier.
+      this.refreshTextDetail();
     } catch (error) {
       if (request.signal.aborted || this.disposed) return;
       console.warn(
@@ -475,6 +511,11 @@ export class Experience {
       portrait,
       maxAnisotropy,
       labels: this.labels,
+      detail: {
+        scale: this.textDetail?.cardScale ?? 1,
+        cell: this.textDetail?.cardCell ?? 1,
+      },
+      mipBias: this.textDetail?.mipBias ?? 0,
     });
     this.cardFocus.length = 0;
     this.cards.cards.forEach(() => this.cardFocus.push(0));
@@ -501,7 +542,10 @@ export class Experience {
     this.animation = new CharacterAnimation(this.character.rig);
 
     this.interaction = new InteractionSystem(this.cards.cards, {
-      onNearbyChange: (id) => this.events.emit("nearbyChange", id),
+      onNearbyChange: (id) => {
+        this.updateCursor();
+        this.events.emit("nearbyChange", id);
+      },
       onChargeChange: (charging) => this.events.emit("chargeChange", charging),
       onProgress: (progress) => this.events.emit("chargeProgress", progress),
       onActivate: (id) => {
@@ -516,12 +560,19 @@ export class Experience {
     const height = this.container.clientHeight || window.innerHeight;
     this.cameraController = new CameraController(width / Math.max(1, height));
     this.cameraController.snapTo(this.controller.position);
+    // Text meshes (card faces, signs) live on their own layer, so they can be
+    // drawn in a separate full-resolution pass (render/CrispComposite.ts).
+    this.cameraController.camera.layers.enable(CRISP_LAYER);
+    shareLightsWithCrispLayer(scene);
+    this.raycaster.layers.set(CRISP_LAYER);
+    this.attachPointer(renderer.domElement);
 
     this.setReducedMotion(this.reducedMotion);
     this.syncCharacterTransform();
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.container);
+    this.resize();
   }
 
   /* ------------------------------------------------------------------------ */
@@ -622,6 +673,8 @@ export class Experience {
     const motion = this.reducedMotion ? 0.15 : 1;
 
     this.syncCharacterTransform();
+    this.updateFootsteps(frame);
+    this.cards!.updatePending();
     this.lights!.playerGlow.position.set(
       controller.position.x,
       controller.position.y + 0.35,
@@ -651,6 +704,42 @@ export class Experience {
     );
   }
 
+  /**
+   * Footprints on the glyph floor: one per stride, alternating feet, and a
+   * wider ripple on landing. Sprint strides are longer and their prints
+   * last longer, so running leaves a trail. Nothing is printed on blocks.
+   */
+  private updateFootsteps(frame: number) {
+    const controller = this.controller!;
+    const floor = this.environment!.floor;
+    const onFloor = controller.grounded && controller.position.y < 0.05;
+    if (onFloor && !this.wasOnFloor) {
+      floor.addStep(
+        controller.position.x,
+        controller.position.z,
+        this.elapsed,
+        1.3,
+      );
+      this.stepDistance = 0;
+    }
+    this.wasOnFloor = onFloor;
+    if (!onFloor || controller.groundSpeed < 0.4) return;
+
+    const sprinting = controller.groundSpeed > PLAYER.maxSpeed * 1.15;
+    this.stepDistance += controller.groundSpeed * frame;
+    if (this.stepDistance < (sprinting ? 0.8 : 0.6)) return;
+    this.stepDistance = 0;
+    this.stepSide = -this.stepSide;
+    // Sideways from the facing direction (sin yaw, cos yaw): one print per foot.
+    const side = 0.13 * this.stepSide;
+    floor.addStep(
+      controller.position.x + Math.cos(controller.yaw) * side,
+      controller.position.z - Math.sin(controller.yaw) * side,
+      this.elapsed,
+      sprinting ? 3.2 : 1.5,
+    );
+  }
+
   private syncCharacterTransform() {
     const root = this.character!.rig.root;
     const controller = this.controller!;
@@ -666,13 +755,145 @@ export class Experience {
     if (!this.renderer || !this.cameraController) return;
     const width = Math.max(1, this.container.clientWidth);
     const height = Math.max(1, this.container.clientHeight);
-    this.renderer.setPixelRatio(
-      this.adaptive?.current ?? cappedDevicePixelRatio(),
-    );
+    const scale = this.adaptive?.current ?? cappedDevicePixelRatio();
+    // Below the text's pixel ratio the world is rendered smaller and the text
+    // on top at full resolution; otherwise everything in one pass.
+    const crisp = this.textDetail?.crispScale ?? 0;
+    this.compositeActive = this.composite !== null && crisp > scale + 0.01;
+    this.renderer.setPixelRatio(this.compositeActive ? crisp : scale);
     this.renderer.setSize(width, height, false);
+    if (this.compositeActive)
+      this.composite!.setSize(width * scale, height * scale);
+    else this.composite?.release();
     this.publishQuality();
     this.cameraController.resize(width, height);
+    this.scheduleTextDetailCheck();
   };
+
+  private computeTextDetail(): TextureDetail | null {
+    if (!this.renderer || !this.detail) return null;
+    const profile = this.adaptive?.profile;
+    return textureDetail(
+      this.detail.tier,
+      this.container.clientHeight || window.innerHeight,
+      profile?.maxScale ?? cappedDevicePixelRatio(),
+      this.renderer.capabilities.maxTextureSize,
+      profile?.software ?? false,
+    );
+  }
+
+  /** After a resize settles, redraw the card faces if the screen now needs another resolution. */
+  private scheduleTextDetailCheck() {
+    const current = this.textDetail;
+    const next = this.computeTextDetail();
+    if (!current || !next || sameCardDetail(current, next)) return;
+    if (this.detailTimer) clearTimeout(this.detailTimer);
+    this.detailTimer = setTimeout(this.refreshTextDetail, 400);
+  }
+
+  private refreshTextDetail = () => {
+    this.detailTimer = null;
+    const previous = this.textDetail;
+    const next = this.computeTextDetail();
+    if (!next || !this.cards || this.disposed) return;
+    this.textDetail = next;
+    if (
+      !previous ||
+      !sameCardDetail(previous, next) ||
+      previous.mipBias !== next.mipBias
+    ) {
+      this.cards.setDetail(
+        { scale: next.cardScale, cell: next.cardCell },
+        next.mipBias,
+      );
+    }
+    if (previous?.crispScale !== next.crispScale) this.resize();
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* Pointer: press and hold a card face to open it                           */
+  /* ------------------------------------------------------------------------ */
+
+  private pointerTarget: HTMLCanvasElement | null = null;
+
+  private attachPointer(canvas: HTMLCanvasElement) {
+    this.pointerTarget = canvas;
+    canvas.addEventListener("pointerdown", this.onPointerDown);
+    canvas.addEventListener("pointermove", this.onPointerMove);
+    canvas.addEventListener("pointerup", this.onPointerEnd);
+    canvas.addEventListener("pointercancel", this.onPointerEnd);
+    canvas.addEventListener("lostpointercapture", this.onPointerEnd);
+    canvas.addEventListener("pointerleave", this.onPointerLeave);
+  }
+
+  private detachPointer() {
+    const canvas = this.pointerTarget;
+    if (!canvas) return;
+    canvas.removeEventListener("pointerdown", this.onPointerDown);
+    canvas.removeEventListener("pointermove", this.onPointerMove);
+    canvas.removeEventListener("pointerup", this.onPointerEnd);
+    canvas.removeEventListener("pointercancel", this.onPointerEnd);
+    canvas.removeEventListener("lostpointercapture", this.onPointerEnd);
+    canvas.removeEventListener("pointerleave", this.onPointerLeave);
+    canvas.style.cursor = "";
+    this.pointerTarget = null;
+  }
+
+  /**
+   * True when (x, y) is over the face of the card the player is standing at.
+   * A card further away cannot be opened, the same as with Space.
+   */
+  private overNearbyCard(clientX: number, clientY: number): boolean {
+    const canvas = this.pointerTarget;
+    const nearby = this.interaction?.nearbyId ?? null;
+    if (!canvas || !nearby || this.activeSection !== null) return false;
+    if (!this.cards || !this.cameraController) return false;
+    const rect = canvas.getBoundingClientRect();
+    this.pointerNdc.set(
+      ((clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1,
+      -((clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1,
+    );
+    this.raycaster.setFromCamera(this.pointerNdc, this.cameraController.camera);
+    return this.cards.pick(this.raycaster) === nearby;
+  }
+
+  private onPointerDown = (event: PointerEvent) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (this.cardPointerId !== null) return;
+    if (!this.overNearbyCard(event.clientX, event.clientY)) return;
+    event.preventDefault();
+    this.pointerTarget?.setPointerCapture(event.pointerId);
+    this.cardPointerId = event.pointerId;
+    this.input.setVirtualAction(true, "card");
+  };
+
+  private onPointerEnd = (event: PointerEvent) => {
+    if (event.pointerId !== this.cardPointerId) return;
+    this.cardPointerId = null;
+    this.input.setVirtualAction(false, "card");
+  };
+
+  private onPointerMove = (event: PointerEvent) => {
+    if (event.pointerType !== "mouse") return;
+    this.lastMouse = { x: event.clientX, y: event.clientY };
+    this.updateCursor();
+  };
+
+  private onPointerLeave = () => {
+    this.lastMouse = null;
+    this.updateCursor();
+  };
+
+  /** Pointer cursor over the card that can be opened (refreshed when the player moves in or out of range). */
+  private updateCursor() {
+    const canvas = this.pointerTarget;
+    if (!canvas) return;
+    const mouse = this.lastMouse;
+    const over =
+      this.cardPointerId !== null ||
+      (mouse !== null && this.overNearbyCard(mouse.x, mouse.y));
+    canvas.style.cursor = over ? "pointer" : "";
+  }
 
   /**
    * Marks the page while the device is constrained (`<html data-quality="low">`),
@@ -687,7 +908,11 @@ export class Experience {
   renderFrame(camera: Camera | undefined = this.cameraController?.camera) {
     if (!this.renderer || !this.scene || !camera) return;
     this.environment?.prepare(this.renderer, camera);
-    this.renderer.render(this.scene, camera);
+    if (this.compositeActive && this.composite) {
+      this.composite.render(this.renderer, this.scene, camera);
+    } else {
+      this.renderer.render(this.scene, camera);
+    }
   }
 
   /** Current render scale (device pixels per CSS pixel). */
