@@ -12,6 +12,7 @@ import {
 } from "@/content/skills";
 import type { SectionId } from "@/types";
 import HoloFrame from "./holo/HoloFrame";
+import ImageLightbox from "./ImageLightbox";
 import RichText from "./RichText";
 import styles from "./SectionContent.module.css";
 
@@ -108,80 +109,122 @@ const SOURCE_LABEL: Record<string, string> = {
   project1: "projects.editorSource",
 };
 
+interface OpenLightbox {
+  images: string[];
+  index: number;
+  title: string;
+}
+
 function Projects() {
   const { t } = useTranslation();
   const projects = t("projects:projects", { returnObjects: true }) as Record<
     string,
     ProjectCopy
   >;
+  const [lightbox, setLightbox] = useState<OpenLightbox | null>(null);
+
   return (
-    <ol className={styles.list}>
-      {Object.entries(projects).map(([key, project], i) => {
-        const images = project.images ?? [];
-        const offline = isOfflineUrl(project.websiteURL);
-        return (
-          <li key={key}>
-            <HoloFrame
-              compact
-              scanlines={false}
-              index={String(i + 1).padStart(2, "0")}
-              className={styles.card}
-            >
-              <h3 className={styles.cardTitle}>{project.title}</h3>
-              {images.length > 0 && (
-                <ul
-                  className={styles.shots}
-                  aria-label={t("ui:projects.screenshots")}
-                >
-                  {images.slice(0, 4).map((src, n) => (
-                    <li key={src}>
-                      <a
-                        href={src}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={t("ui:projects.openImage", {
-                          n: n + 1,
-                          title: project.title,
-                        })}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary thumbnails */}
-                        <img
-                          src={cloudinaryThumb(src)}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                          width={240}
-                          height={150}
-                        />
-                      </a>
-                    </li>
-                  ))}
-                  {images.length > 4 && (
-                    <li className={styles.moreShots}>+{images.length - 4}</li>
-                  )}
-                </ul>
-              )}
-              <p className={styles.body}>{project.desc}</p>
-              <div className={styles.links}>
-                {project.projectURL && (
-                  <External href={project.projectURL}>
-                    {t(`ui:${SOURCE_LABEL[key] ?? "projects.source"}`)}
-                  </External>
+    <>
+      <ol className={styles.list}>
+        {Object.entries(projects).map(([key, project], i) => {
+          const images = project.images ?? [];
+          const offline = isOfflineUrl(project.websiteURL);
+          return (
+            <li key={key}>
+              <HoloFrame
+                compact
+                scanlines={false}
+                index={String(i + 1).padStart(2, "0")}
+                className={styles.card}
+              >
+                <h3 className={styles.cardTitle}>{project.title}</h3>
+                {images.length > 0 && (
+                  <ul
+                    className={styles.shots}
+                    aria-label={t("ui:projects.screenshots")}
+                  >
+                    {images.slice(0, 4).map((src, n) => (
+                      <li key={src}>
+                        <button
+                          type="button"
+                          className={styles.shot}
+                          onClick={() =>
+                            setLightbox({
+                              images,
+                              index: n,
+                              title: project.title,
+                            })
+                          }
+                          aria-label={t("ui:projects.openImage", {
+                            n: n + 1,
+                            title: project.title,
+                          })}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary thumbnails */}
+                          <img
+                            src={cloudinaryThumb(src)}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            width={240}
+                            height={150}
+                          />
+                        </button>
+                      </li>
+                    ))}
+                    {images.length > 4 && (
+                      <li>
+                        <button
+                          type="button"
+                          className={styles.moreShots}
+                          onClick={() =>
+                            setLightbox({
+                              images,
+                              index: 4,
+                              title: project.title,
+                            })
+                          }
+                          aria-label={t("ui:projects.viewMoreImages", {
+                            count: images.length - 4,
+                            title: project.title,
+                          })}
+                        >
+                          +{images.length - 4}
+                        </button>
+                      </li>
+                    )}
+                  </ul>
                 )}
-                {project.websiteURL &&
-                  (offline ? (
-                    <Offline />
-                  ) : (
-                    <External href={project.websiteURL}>
-                      {t("ui:projects.live")}
+                <p className={styles.body}>{project.desc}</p>
+                <div className={styles.links}>
+                  {project.projectURL && (
+                    <External href={project.projectURL}>
+                      {t(`ui:${SOURCE_LABEL[key] ?? "projects.source"}`)}
                     </External>
-                  ))}
-              </div>
-            </HoloFrame>
-          </li>
-        );
-      })}
-    </ol>
+                  )}
+                  {project.websiteURL &&
+                    (offline ? (
+                      <Offline />
+                    ) : (
+                      <External href={project.websiteURL}>
+                        {t("ui:projects.live")}
+                      </External>
+                    ))}
+                </div>
+              </HoloFrame>
+            </li>
+          );
+        })}
+      </ol>
+      {lightbox && (
+        <ImageLightbox
+          images={lightbox.images}
+          initialIndex={lightbox.index}
+          title={lightbox.title}
+          onClose={() => setLightbox(null)}
+        />
+      )}
+    </>
   );
 }
 

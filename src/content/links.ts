@@ -41,3 +41,17 @@ export function cloudinaryThumb(
       )
     : url;
 }
+
+/**
+ * Cloudinary delivery URL → a full-quality version for the lightbox, capped
+ * at a sane width but never cropped (unlike cloudinaryThumb's c_fill, this
+ * uses c_limit so the original aspect ratio is kept intact).
+ */
+export function cloudinaryFull(url: string, maxWidth = 1600): string {
+  return url.includes("/image/upload/")
+    ? url.replace(
+        "/image/upload/",
+        `/image/upload/c_limit,w_${maxWidth},q_auto,f_auto/`,
+      )
+    : url;
+}

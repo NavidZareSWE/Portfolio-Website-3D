@@ -90,7 +90,15 @@
     "offline": "سایت در حال حاضر آفلاین است",
     "editorSource": "کد منبع فورک ویرایشگر Tiptap",
     "screenshots": "تصاویر",
-    "openImage": "باز کردن تصویر {{n}} از {{title}} در زبانه‌ی جدید"
+    "openImage": "باز کردن تصویر {{n}} از {{title}}",
+    "viewMoreImages": "نمایش {{count}} تصویر دیگر از {{title}}"
+  },
+  "lightbox": {
+    "close": "بستن نمایشگر تصویر",
+    "prevImage": "تصویر قبلی",
+    "nextImage": "تصویر بعدی",
+    "imageAlt": "تصویر {{n}} از {{title}}",
+    "dialogLabel": "تصاویر {{title}}"
   },
   "about": {
     "downloadCv": "دانلود رزومه",

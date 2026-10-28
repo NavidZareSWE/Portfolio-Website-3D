@@ -90,7 +90,15 @@
     "offline": "Site currently offline",
     "editorSource": "Tiptap editor fork — source",
     "screenshots": "Screenshots",
-    "openImage": "Open screenshot {{n}} of {{title}} in a new tab"
+    "openImage": "Open screenshot {{n}} of {{title}}",
+    "viewMoreImages": "View {{count}} more screenshots of {{title}}"
+  },
+  "lightbox": {
+    "close": "Close image viewer",
+    "prevImage": "Previous image",
+    "nextImage": "Next image",
+    "imageAlt": "Screenshot {{n}} of {{title}}",
+    "dialogLabel": "{{title}} screenshots"
   },
   "about": {
     "downloadCv": "Download CV",
