@@ -27,6 +27,8 @@ properties) and the Three.js world (imported directly) read from it.
 | 🩵     | `cyanSoft`                      | `#8af0ff`                         | `--cyan-soft`   | Large luminous WebGL surfaces (logo, card-title glow). _Mapped to CSS but currently unused there — see §4._ |
 | 🔵     | `blue`                          | `#2a8cff`                         | `--blue`        | Secondary accent — dashed frames, dim glyphs, footer text                                                   |
 | 🟢     | `green`                         | `#3dff7a`                         | `--green`       | Brand accent only (logo piping, sneaker glow)                                                               |
+| 🟧     | `amber`                         | `#ffb547`                         | `--amber`       | Warm accent: the About rug in the floor, server-rack LEDs. _Mapped to CSS but currently unused there._      |
+| 🟥     | `alert`                         | `#ff4d5e`                         | `--alert`       | Errors and refusals only: bugs, the firewall's ACCESS DENIED, terminal errors, the HUD bug icon             |
 | 🟩     | `teal` / `tealMid` / `tealDeep` | `#3fe0cf` / `#1b8f88` / `#0a2f2f` | — (WebGL only)  | Environment glyphs: floor, data blocks, rain, scene props                                                   |
 | 🔷     | `deep`                          | `#0d2a4a`                         | `--deep`        | Low-intensity ASCII glyphs. _Mapped to CSS but currently unused there._                                     |
 | ⬜     | `ink`                           | `#dbf4ff`                         | `--text`        | Body text                                                                                                   |

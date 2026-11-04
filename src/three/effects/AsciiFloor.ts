@@ -15,7 +15,7 @@ import {
   type Texture,
   type WebGLRenderer,
 } from "three";
-import { INTERACTION, WORLD } from "../config";
+import { INTERACTION, REDUCED_MOTION_SPEED, WORLD } from "../config";
 import { SCREEN_FORWARD, SCREEN_RIGHT } from "../utils/math";
 import {
   ATLAS_CODE_LENGTH,
@@ -28,6 +28,8 @@ import {
 export const MAX_FLOOR_CARDS = 5;
 /** Footprints kept for the floor's step ripples (a ring buffer). */
 const MAX_STEPS = 16;
+/** Landing shockwaves in flight at once (a ring buffer). */
+const MAX_WAVES = 4;
 
 /** Corners of the view in normalised device coordinates. */
 const FIT_CORNERS = [
@@ -61,7 +63,10 @@ void main() {
  *   - the NZSWE logo near spawn, written in neon-green glyphs,
  *   - a soft glow and blob shadow under the player,
  *   - footprints: each step brightens the glyphs under it and sends out a
- *     ring that fades (sprinting leaves a longer-lived trail).
+ *     ring that fades (sprinting leaves a longer-lived trail),
+ *   - landing shockwaves: a ring of shuffling glyphs racing outward,
+ *   - district decals (FloorDecals.ts): glyphs painted per cell, with their
+ *     own colour and animation, which mute the circuit underneath.
  *
  * Everything except the glyph shape, the play-area edge and the blob shadow
  * is constant across a cell, and a cell covers hundreds of screen pixels. So
@@ -71,7 +76,10 @@ void main() {
  * machines without a GPU.
  */
 
-/** Field pass: one fragment per cell. Output (RGBA8): signal, cyan weight, logo, glyph index + trace flag. */
+/**
+ * Field pass: one fragment per cell. Output (RGBA8): signal, cyan weight,
+ * accent (palette id × 64 + weight × 63, see ACCENT_*), glyph index + trace flag.
+ */
 const fieldVertexShader = /* glsl */ `
 void main() {
   gl_Position = vec4(position.xy, 0.0, 1.0);
@@ -97,11 +105,20 @@ uniform float uCardFocus[${MAX_FLOOR_CARDS}];
 uniform vec4 uSteps[${MAX_STEPS}];
 /** Real (not motion-scaled) time, for footprint ages. */
 uniform float uClock;
+uniform sampler2D uDecal;
+/** Shockwaves: (x, z, time started, strength 0..1); strength 0 = unused. */
+uniform vec4 uWaves[${MAX_WAVES}];
 
 ${GLSL_HASH}
 
 void main() {
   vec2 cell = floor(gl_FragCoord.xy) - uOffset;
+  vec4 decal = texelFetch(uDecal, ivec2(gl_FragCoord.xy), 0);
+  float decalGlyph = floor(decal.r * 255.0 + 0.5);
+  float decalFlags = floor(decal.a * 255.0 + 0.5);
+  float muted = step(128.0, decalFlags);
+  float decalAnim = decalFlags - 128.0 * muted;
+  float decalColor = floor(decal.b * 255.0 + 0.5);
   vec2 centerScreen = (cell + 0.5) * uCell;
   vec2 cw = centerScreen.x * uRight + centerScreen.y * uForward;
   if (length(cw) > uFloorRadius + 1.0) {
@@ -117,11 +134,11 @@ void main() {
   float col = step(abs(inMacro.x - 3.0), 0.1);
   float hOn = step(0.5, hash12(macro + vec2(3.1, 7.7)));
   float vOn = step(0.56, hash12(macro + vec2(9.4, 1.3)));
-  float trace = max(row * hOn, col * vOn);
-  float node = row * col * step(0.55, hash12(macro + 5.3)) * max(hOn, vOn);
+  float trace = max(row * hOn, col * vOn) * (1.0 - muted);
+  float node = row * col * step(0.55, hash12(macro + 5.3)) * max(hOn, vOn) * (1.0 - muted);
   float pulse = pow(fract(dot(cell, vec2(0.031, 0.027)) - t * 0.22 + hash12(macro) * 7.0), 14.0);
 
-  float signal = 0.03 + valueNoise(cw * 0.3) * 0.05;
+  float signal = 0.03 + valueNoise(cw * 0.3) * 0.05 * (1.0 - 0.5 * muted);
   signal += trace * (0.2 + pulse * 0.55) + node * 0.4;
 
   // --- card emitters: light pools, concentric rings, interaction ring -----
@@ -163,6 +180,29 @@ void main() {
   stepGlow = min(stepGlow, 1.0);
   signal += stepGlow * 0.8;
   cyanWeight = max(cyanWeight, min(1.0, stepGlow * 1.8));
+
+  // --- landing shockwaves: a ring of shuffling glyphs racing outward --------
+  float wave = 0.0;
+  float waveBand = 0.0;
+  for (int i = 0; i < ${MAX_WAVES}; i++) {
+    vec4 w = uWaves[i];
+    float age = uClock - w.z;
+    if (w.w <= 0.0 || age < 0.0 || age > 1.6) continue;
+    float d = distance(cw, w.xy);
+    float reach = 2.5 + 3.5 * w.w;
+    float radius = age * (6.0 + 2.0 * w.w);
+    if (radius > reach + 0.5 || d > radius + 0.6) continue;
+    float fade = 1.0 - smoothstep(reach * 0.55, reach, radius);
+    float band = 1.0 - smoothstep(0.15, 0.6, abs(d - radius));
+    float wake = step(d, radius) * exp(-(radius - d) * 2.5) * 0.4;
+    wave += (band + wake) * fade;
+    waveBand = max(waveBand, band * fade);
+  }
+  // Reduced motion: no shockwave at all (it is pure movement).
+  wave = min(wave, 1.0) * step(0.5, uMotion);
+  waveBand *= step(0.5, uMotion);
+  signal += wave * 0.75;
+  cyanWeight = max(cyanWeight, min(1.0, wave * 1.6));
   signal = clamp(signal, 0.0, 1.0);
 
   // --- logo written in green glyphs ------------------------------------------
@@ -179,7 +219,34 @@ void main() {
   float isCode = max(max(max(trace, node), step(0.5, logo)), step(0.3, stepGlow));
   float index = mix(rampGlyph, codeGlyph, isCode);
 
-  gl_FragColor = vec4(signal, cyanWeight, logo, (index + ${GLYPH_FLAG.toFixed(1)} * trace) / 255.0);
+  // --- district decals ------------------------------------------------------------
+  float hasDecal = step(0.5, decalGlyph);
+  float decalLevel = decal.g;
+  if (abs(decalAnim - 1.0) < 0.5) {
+    decalLevel *= 0.55 + 1.1 * pow(fract(dot(cell, vec2(0.045, 0.037)) - t * 0.3 + hash12(floor(cell / 9.0)) * 5.0), 10.0);
+  } else if (abs(decalAnim - 2.0) < 0.5) {
+    decalLevel *= 0.3 + 0.7 * step(0.45, fract(t * (0.35 + hash12(cell) * 0.9) + hash12(cell + 3.7)));
+  } else if (abs(decalAnim - 4.0) < 0.5) {
+    decalLevel *= 0.6 + pow(fract(-cell.y * 0.045 + t * 0.35), 8.0);
+  }
+  float decalIndex = abs(decalAnim - 3.0) < 0.5 ? codeGlyph : decalGlyph - 1.0;
+  index = mix(index, decalIndex, hasDecal);
+  signal = max(signal, min(decalLevel, 1.0) * hasDecal);
+  cyanWeight = max(cyanWeight, hasDecal * step(0.5, decalColor) * step(decalColor, 1.5));
+
+  // The shockwave's front shuffles whatever is under it.
+  float fastGlyph = ${ATLAS_CODE_START.toFixed(1)} + floor(hash12(cell + floor(uClock * 18.0)) * ${ATLAS_CODE_LENGTH.toFixed(1)});
+  index = mix(index, fastGlyph, step(0.35, waveBand));
+
+  // --- accent colour: the logo (green) or a decal's green / blue / amber -----------
+  float decalAccent = hasDecal * step(1.5, decalColor);
+  float accentId = decalAccent > 0.5 ? decalColor - 2.0 : 0.0;
+  float accent = max(logo, decalAccent);
+  // The logo glows at a fixed brightness (0.35 + 0.69 × 1.3 ≈ 1.25 in the floor pass).
+  signal = mix(signal, 0.69, logo * (1.0 - decalAccent));
+  float packedAccent = accentId * 64.0 + floor(accent * 63.0 + 0.5);
+
+  gl_FragColor = vec4(signal, cyanWeight, packedAccent / 255.0, (index + ${GLYPH_FLAG.toFixed(1)} * trace) / 255.0);
 }
 `;
 
@@ -201,6 +268,8 @@ uniform vec3 uTealMid;
 uniform vec3 uTeal;
 uniform vec3 uCyan;
 uniform vec3 uGreen;
+uniform vec3 uBlue;
+uniform vec3 uAmber;
 uniform vec3 uBackground;
 varying vec3 vWorld;
 
@@ -222,7 +291,10 @@ void main() {
   vec4 field = texelFetch(uField, texel, 0);
   float signal = field.r;
   float cyanWeight = field.g;
-  float logo = field.b;
+  float packedAccent = floor(field.b * 255.0 + 0.5);
+  float accentId = floor(packedAccent / 64.0);
+  float accent = (packedAccent - accentId * 64.0) / 63.0;
+  vec3 accentColor = accentId < 0.5 ? uGreen : (accentId < 1.5 ? uBlue : uAmber);
   float packed = floor(field.a * 255.0 + 0.5);
   float trace = step(${GLYPH_FLAG.toFixed(1)}, packed);
   float index = packed - ${GLYPH_FLAG.toFixed(1)} * trace;
@@ -235,8 +307,7 @@ void main() {
   tealColor = mix(tealColor, uTeal, smoothstep(0.35, 0.8, signal));
   vec3 glyphColor = mix(tealColor, uCyan, cyanWeight);
   float intensity = 0.35 + signal * 1.3;
-  glyphColor = mix(glyphColor, uGreen, logo);
-  intensity = mix(intensity, 1.25, logo);
+  glyphColor = mix(glyphColor, accentColor, accent);
 
   vec3 color = uBase + glyphColor * glyph * intensity * inside;
   // Beyond the playable disc the circuit continues, dimmer.
@@ -282,8 +353,12 @@ export class AsciiFloor {
     () => new Vector4(0, 0, 0, 0),
   );
   private nextStep = 0;
-
-  constructor(atlas: Texture, logo: FloorLogo) {
+  private readonly waves = Array.from(
+    { length: MAX_WAVES },
+    () => new Vector4(0, 0, 0, 0),
+  );
+  private nextWave = 0;
+  constructor(atlas: Texture, logo: FloorLogo, decals: Texture) {
     this.cardPositions = Array.from(
       { length: MAX_FLOOR_CARDS },
       () => new Vector3(1e4, 0, 1e4),
@@ -327,6 +402,8 @@ export class AsciiFloor {
         uCardFocus: { value: this.cardFocus },
         uSteps: { value: this.steps },
         uClock: { value: 0 },
+        uDecal: { value: decals },
+        uWaves: { value: this.waves },
       },
     });
     const quad = new Mesh(new PlaneGeometry(2, 2), this.fieldMaterial);
@@ -348,6 +425,8 @@ export class AsciiFloor {
         uTeal: { value: new Color(THEME.teal) },
         uCyan: { value: new Color(THEME.cyan) },
         uGreen: { value: new Color(THEME.green) },
+        uBlue: { value: new Color(THEME.blue) },
+        uAmber: { value: new Color(THEME.amber) },
         uBackground: { value: new Color(THEME.bg) },
       },
     });
@@ -374,6 +453,20 @@ export class AsciiFloor {
   addStep(x: number, z: number, time: number, life: number) {
     this.steps[this.nextStep].set(x, z, time, life);
     this.nextStep = (this.nextStep + 1) % MAX_STEPS;
+  }
+
+  /**
+   * Sends a ring of shuffling glyphs out from (x, z). `strength` (0..1)
+   * sets how far it travels; `time` is the clock passed to `update`.
+   */
+  addShockwave(x: number, z: number, time: number, strength: number) {
+    this.waves[this.nextWave].set(
+      x,
+      z,
+      time,
+      Math.min(1, Math.max(0.05, strength)),
+    );
+    this.nextWave = (this.nextWave + 1) % MAX_WAVES;
   }
 
   update(time: number, player: Vector3, focus: readonly number[]) {
@@ -434,7 +527,9 @@ export class AsciiFloor {
   }
 
   setReducedMotion(reduced: boolean) {
-    this.fieldMaterial.uniforms.uMotion.value = reduced ? 0.15 : 1;
+    this.fieldMaterial.uniforms.uMotion.value = reduced
+      ? REDUCED_MOTION_SPEED
+      : 1;
   }
 
   /** The field pass lives outside the scene graph, so it is released here. */

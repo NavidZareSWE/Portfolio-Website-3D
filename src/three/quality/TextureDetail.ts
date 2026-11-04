@@ -52,7 +52,7 @@ const quarter = (value: number) => Math.ceil(value * 4 - 1e-6) / 4;
  * @param viewportHeight  Stage height in CSS pixels.
  * @param maxPixelRatio   Highest pixel ratio the renderer may use.
  * @param maxTextureSize  `renderer.capabilities.maxTextureSize`.
- * @param software        Software rendering (no GPU): no separate text pass.
+ * @param software        Software rendering (no GPU): the text pass runs at 1x at most.
  */
 export function textureDetail(
   tier: ModelTier,
@@ -77,7 +77,11 @@ export function textureDetail(
     cardScale,
     cardCell: t.cardCell,
     mipBias: t.mipBias,
-    crispScale: software ? 0 : Math.min(t.crispScale, maxPixelRatio),
+    // Without a GPU the text pass still runs, at 1x: the world drops to 0.5–0.75
+    // there, and text at that scale is hard to read.
+    crispScale: software
+      ? Math.min(1, maxPixelRatio)
+      : Math.min(t.crispScale, maxPixelRatio),
   };
 }
 

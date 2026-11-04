@@ -26,6 +26,15 @@ import { HackerDesk } from "./vignettes/HackerDesk";
 import { Hobbies } from "./vignettes/Hobbies";
 import { RoutingFork } from "./vignettes/RoutingFork";
 import { ScannerArch } from "./vignettes/ScannerArch";
+import { ArcadeCabinet } from "./vignettes/ArcadeCabinet";
+import { CozyCorner } from "./vignettes/CozyCorner";
+import { PackageWarehouse } from "./vignettes/PackageWarehouse";
+import { SocialPortals } from "./vignettes/SocialPortals";
+import { StackTower } from "./vignettes/StackTower";
+import type { WorldStation } from "./stations";
+import { DistrictLabels } from "./vignettes/DistrictLabels";
+import { Horizon } from "./vignettes/Horizon";
+import { TerminalStation } from "./vignettes/TerminalStation";
 
 /** Two-tone glyph-mask sources built from the reference image (scripts/mask/). */
 export const MASK_URLS = {
@@ -84,6 +93,10 @@ const near = (
 export interface Vignettes {
   group: Group;
   kit: GlyphKit;
+  /** The walk-up terminal near spawn. */
+  terminal: TerminalStation;
+  /** Everything used by holding Space next to it (terminal, arcade, portals). */
+  stations: WorldStation[];
   update(time: number, dt: number, player: Vector3): void;
   setReducedMotion(reduced: boolean): void;
 }
@@ -142,7 +155,22 @@ export function createVignettes(options: {
     new DataFlow(ctx),
     new ScannerArch(ctx),
     new RoutingFork(ctx),
+    // District props and the world beyond the firewall.
+    new CozyCorner(ctx),
+    new DistrictLabels(ctx),
+    new Horizon(ctx),
   ];
+  const terminal = new TerminalStation(ctx);
+  const arcade = new ArcadeCabinet(ctx);
+  const portals = new SocialPortals(ctx);
+  scenes.push(
+    terminal,
+    arcade,
+    portals,
+    new PackageWarehouse(ctx),
+    new StackTower(ctx),
+  );
+  const stations: WorldStation[] = [terminal, arcade, ...portals.portals];
 
   const group = new Group();
   group.name = "vignettes";
@@ -151,6 +179,8 @@ export function createVignettes(options: {
   return {
     group,
     kit,
+    terminal,
+    stations,
     update(time, dt, player) {
       kit.update(time);
       for (const scene of scenes) scene.update(time, dt, player);

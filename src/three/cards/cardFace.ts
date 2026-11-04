@@ -421,6 +421,15 @@ export function createCardFace(
   ctx.restore();
 
   // ---------------- crisp text layer ----------------
+  // Each string is drawn with its glow, then again without it, so the
+  // letters stay sharp instead of being blurred by the glow.
+  const crispFill = (value: string, x: number, y: number) => {
+    ctx.fillText(value, x, y);
+    const blur = ctx.shadowBlur;
+    ctx.shadowBlur = 0;
+    ctx.fillText(value, x, y);
+    ctx.shadowBlur = blur;
+  };
   const glow = (blur: number) => {
     ctx.shadowColor = "rgba(95, 240, 255, 0.85)";
     ctx.shadowBlur = blur * S;
@@ -460,7 +469,7 @@ export function createCardFace(
     ctx.shadowColor = "rgba(95, 240, 255, 0.85)";
     ctx.shadowBlur = 18 * S;
     ctx.font = `800 ${fitText(ctx, title, W * 0.6, text.rtl ? 72 : 84, TF)}px ${TF}`;
-    ctx.fillText(title, PAD + 36, 128);
+    crispFill(title, PAD + 36, 128);
   });
   ctx.restore();
 
@@ -468,19 +477,19 @@ export function createCardFace(
   glow(6);
   ctx.fillStyle = "rgba(160, 235, 255, 0.95)";
   ctx.font = `600 24px ${FONTS.mono}`;
-  ctx.fillText(`SECTOR-${meta.index} // ${meta.code}`, PAD + 36, 172);
+  crispFill(`SECTOR-${meta.index} // ${meta.code}`, PAD + 36, 172);
 
   const labels = ["SIG", "SYNC", "LOAD", "LINK"];
   ctx.font = `600 22px ${FONTS.mono}`;
   labels.forEach((label, i) =>
-    ctx.fillText(`${label}`, PAD + 36, statsTop + 16 + i * 34),
+    crispFill(`${label}`, PAD + 36, statsTop + 16 + i * 34),
   );
 
   ctx.textAlign = "center";
   ctx.font = `700 22px ${FONTS.mono}`;
-  ctx.fillText("NZSWE", W - 150, 240);
+  crispFill("NZSWE", W - 150, 240);
   ctx.font = `500 18px ${FONTS.mono}`;
-  ctx.fillText("PORTFOLIO.SYS", W - 150, 266);
+  crispFill("PORTFOLIO.SYS", W - 150, 266);
 
   // Right column beside the artwork: the section's tagline.
   const columnWidth = W - PAD - 30 - (artX + artW + 16);
@@ -490,14 +499,14 @@ export function createCardFace(
     text.tagline.slice(0, 6).forEach((line, i) => {
       fitted(line, 600, 22, columnWidth);
       // In RTL, "right" alignment still anchors the line's right edge at x.
-      ctx.fillText(line, W - PAD - 30, artY + 180 + i * 32);
+      crispFill(line, W - PAD - 30, artY + 180 + i * 32);
     });
   });
 
   // Lower-left info block.
   ctx.textAlign = "left";
   ctx.font = `700 24px ${FONTS.mono}`;
-  ctx.fillText(`ID: ${hex}`, PAD + 42, lowerY + 40);
+  crispFill(`ID: ${hex}`, PAD + 42, lowerY + 40);
   const infoWidth = W * 0.44 - 50;
   translated(() => {
     ctx.fillStyle = "rgba(160, 235, 255, 0.95)";
@@ -505,13 +514,13 @@ export function createCardFace(
     const x = text.rtl ? PAD + 18 + W * 0.44 - 24 : PAD + 42;
     [text.nameLine, text.classLine, text.status].forEach((line, i) => {
       fitted(line, 500, 20, infoWidth);
-      ctx.fillText(line, x, lowerY + 74 + i * 26);
+      crispFill(line, x, lowerY + 74 + i * 26);
     });
   });
   // Lower-right actions.
   ctx.font = `600 19px ${FONTS.mono}`;
   ["// OPEN", "// READ", "// INDEX", "// EXIT"].forEach((line, i) =>
-    ctx.fillText(line, W * 0.55, lowerY + 36 + i * 28),
+    crispFill(line, W * 0.55, lowerY + 36 + i * 28),
   );
 
   // Quote line: the section's one-line summary.
@@ -522,7 +531,7 @@ export function createCardFace(
       ? `«${text.summary}»`
       : `"${text.summary.toUpperCase()}"`;
     fitted(quote, 500, 21, W - (PAD + 40) * 2);
-    ctx.fillText(quote, W / 2, 994);
+    crispFill(quote, W / 2, 994);
   });
   ctx.restore();
 
@@ -536,7 +545,7 @@ export function createCardFace(
     ctx.shadowColor = "rgba(95, 240, 255, 0.85)";
     ctx.shadowBlur = 10 * S;
     fitted(text.prompt, 800, 26, W - (PAD + 40) * 2);
-    ctx.fillText(text.prompt, W / 2, footerY);
+    crispFill(text.prompt, W / 2, footerY);
   });
   ctx.restore();
   const trackX = W * 0.2;

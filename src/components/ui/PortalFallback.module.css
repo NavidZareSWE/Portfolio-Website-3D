@@ -1,0 +1,34 @@
+.wrap {
+  position: fixed;
+  left: 50%;
+  top: calc(max(16px, env(safe-area-inset-top)) + 64px);
+  z-index: 30;
+  width: min(380px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  animation: drop 220ms var(--ease-out);
+}
+
+.text {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrap {
+    animation: none;
+  }
+}

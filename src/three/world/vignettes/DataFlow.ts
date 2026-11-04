@@ -12,6 +12,7 @@ import {
   Vector3,
 } from "three";
 import { ATLAS_CODE_LENGTH, ATLAS_CODE_START } from "../../effects/AsciiAtlas";
+import { CARD_LAYOUT } from "../../cards/CardRegistry";
 import { createRandom } from "../../utils/math";
 import { FlowPath, buildTrack, type GroundPoint } from "../FlowPath";
 import { PropKit, TINT } from "../PropKit";
@@ -22,13 +23,24 @@ import {
   type VignetteContext,
 } from "../Vignette";
 
-/** Scene centre in layout units (right, up); everything below is relative to it. */
-export const DATA_FLOW_CENTER = { right: -6, up: 17.4 } as const;
+/**
+ * The scene was authored beside the Projects card at (0, 16): the numbers
+ * below are in that frame, and the scene moves with the card.
+ */
+const AUTHORED_CARD = { right: 0, up: 16 } as const;
+const AUTHORED_CENTER = { right: -6, up: 17.4 } as const;
 
-/** Layout point (right, up) → this scene's local ground point. */
+/** Scene centre in layout units (right, up). */
+export const DATA_FLOW_CENTER = {
+  right:
+    AUTHORED_CENTER.right + CARD_LAYOUT.projects.right - AUTHORED_CARD.right,
+  up: AUTHORED_CENTER.up + CARD_LAYOUT.projects.up - AUTHORED_CARD.up,
+} as const;
+
+/** Authored layout point (right, up) → this scene's local ground point. */
 const at = (right: number, up: number): GroundPoint => [
-  right - DATA_FLOW_CENTER.right,
-  -(up - DATA_FLOW_CENTER.up),
+  right - AUTHORED_CENTER.right,
+  -(up - AUTHORED_CENTER.up),
 ];
 
 const SERVER = { right: -5.2, up: 18.6, width: 1.0, depth: 0.8, height: 2.4 };

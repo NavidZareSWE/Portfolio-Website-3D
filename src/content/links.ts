@@ -11,6 +11,14 @@ export const CONTACT = {
   map: "https://maps.app.goo.gl/Bg3W7M6TkNXr1SPEA",
 } as const;
 
+/** Where each social portal in the world leads (world/vignettes/SocialPortals.ts). */
+export const PORTAL_LINKS = {
+  github: CONTACT.github,
+  linkedin: CONTACT.linkedin,
+  telegram: CONTACT.telegram,
+  email: `mailto:${CONTACT.email}`,
+} as const;
+
 /**
  * Sites that are offline (the company stopped covering their servers).
  * Links to them are shown as plain text with an "offline" note, never as

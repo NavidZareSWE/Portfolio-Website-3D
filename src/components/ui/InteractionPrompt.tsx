@@ -11,8 +11,23 @@ import { useSectionText } from "@/i18n/useSectionText";
 import { SECTION_META_BY_ID } from "@/content/sections";
 import { useExperience } from "@/components/experience/ExperienceContext";
 import { useAppSelector } from "@/store/hooks";
-import { selectIsCharging, selectPromptCard } from "@/store/selectors";
+import {
+  selectIsCharging,
+  selectPromptCard,
+  selectStationPrompt,
+} from "@/store/selectors";
+import type { StationId } from "@/types";
 import HoloFrame, { HoloTrack } from "./holo/HoloFrame";
+
+/** The `// …` tag shown on the prompt per station. */
+const STATION_INDEX: Record<StationId, string> = {
+  terminal: "TTY",
+  arcade: "ARC",
+  github: "LINK",
+  linkedin: "LINK",
+  telegram: "LINK",
+  email: "MAIL",
+};
 import styles from "./InteractionPrompt.module.css";
 
 /**
@@ -24,6 +39,9 @@ import styles from "./InteractionPrompt.module.css";
  *
  * The prompt itself can be held too (mouse button or finger): it holds the
  * action the same way Space or the touch action button does.
+ *
+ * At a station (the terminal, the arcade, a social portal) the same prompt
+ * and the same hold use it: `[ HOLD SPACE TO ACCESS ] TERMINAL`.
  */
 export default function InteractionPrompt({
   touchMode,
@@ -31,6 +49,7 @@ export default function InteractionPrompt({
   touchMode: boolean;
 }) {
   const cardId = useAppSelector(selectPromptCard);
+  const station = useAppSelector(selectStationPrompt);
   const charging = useAppSelector(selectIsCharging);
   const experience = useExperience();
   const { t } = useTranslation("ui");
@@ -39,6 +58,12 @@ export default function InteractionPrompt({
   // Keep the last card's labels while the prompt fades out.
   const [shownId, setShownId] = useState(cardId);
   if (cardId !== null && cardId !== shownId) setShownId(cardId);
+  // …and the last station's, while the prompt fades out after leaving it.
+  const [shownStation, setShownStation] = useState(station);
+  if (cardId !== null && shownStation !== null) setShownStation(null);
+  else if (cardId === null && station !== null && station !== shownStation)
+    setShownStation(station);
+  const stationShown = shownStation !== null;
 
   useEffect(() => {
     if (!experience) return;
@@ -48,9 +73,13 @@ export default function InteractionPrompt({
     });
   }, [experience]);
 
-  const meta = shownId ? SECTION_META_BY_ID[shownId] : null;
-  const title = meta ? sectionText(meta.id).title : "";
-  const visible = cardId !== null;
+  const meta = shownId && !stationShown ? SECTION_META_BY_ID[shownId] : null;
+  const title = meta
+    ? sectionText(meta.id).title
+    : shownStation
+      ? t(`stations.${shownStation}`)
+      : "";
+  const visible = cardId !== null || station !== null;
 
   // Leaving the card's range (prompt hidden) ends a hold made on the prompt.
   useEffect(() => {
@@ -77,8 +106,8 @@ export default function InteractionPrompt({
     >
       <HoloFrame
         compact
-        index={meta?.index}
-        code={meta ? title.toUpperCase() : undefined}
+        index={stationShown ? STATION_INDEX[shownStation] : meta?.index}
+        code={meta || stationShown ? title.toUpperCase() : undefined}
         className={`${styles.prompt} ${visible ? styles.visible : ""} ${charging ? styles.charging : ""}`}
         aria-hidden={!visible}
         onPointerDown={press}
@@ -92,12 +121,20 @@ export default function InteractionPrompt({
             {touchMode ? t("prompt.holdTouch") : t("prompt.hold")}
           </span>
           <span className={styles.text}>
-            {visible && meta ? <strong>{title}</strong> : null}
+            {visible && (meta || stationShown) ? (
+              <strong>{title}</strong>
+            ) : null}
           </span>
         </p>
         <HoloTrack fillRef={fillRef} />
         <p className={styles.hint}>
-          {touchMode ? t("prompt.touchHere") : t("prompt.clickHere")}
+          {stationShown
+            ? touchMode
+              ? t("prompt.stationTap")
+              : t("prompt.stationClick")
+            : touchMode
+              ? t("prompt.touchHere")
+              : t("prompt.clickHere")}
         </p>
       </HoloFrame>
     </div>

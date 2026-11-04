@@ -11,6 +11,7 @@ import {
   selectGameStatus,
   selectIsCharging,
   selectIsOverlayOpen,
+  selectIsModalOpen,
   selectPromptCard,
 } from "@/store/selectors";
 import type { ControlKey } from "@/types";
@@ -87,11 +88,12 @@ export default function WASDGuide() {
   const experience = useExperience();
   const status = useAppSelector(selectGameStatus);
   const overlayOpen = useAppSelector(selectIsOverlayOpen);
+  const modalOpen = useAppSelector(selectIsModalOpen);
   const promptCard = useAppSelector(selectPromptCard);
   const charging = useAppSelector(selectIsCharging);
   const reducedMotion = usePrefersReducedMotion();
   const nodes = useRef<Partial<Record<GuideKey, KeyNodes>>>({});
-  const visible = status === "ready" && !overlayOpen;
+  const visible = status === "ready" && !overlayOpen && !modalOpen;
   const nearMeta = promptCard ? SECTION_META_BY_ID[promptCard] : undefined;
 
   useEffect(() => {

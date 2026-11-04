@@ -10,26 +10,28 @@ The site has one dark "holo-terminal" theme. One module, `src/theme/theme.ts`, d
 - `FONTS`: three font stacks: `mono`, `display` and `persian`.
 - `themeCssVariables()`: maps a subset of those tokens to CSS custom properties.
 
-| Token                         | Value                                                  | Used for                                                                    |
-| ----------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `bg`                          | `#04060b`                                              | Page background, scene background and fog colour, glyph fog colour          |
-| `panel`                       | `rgba(6, 18, 40, 0.84)`                                | Translucent glass fill of holo panels and buttons                           |
-| `panelSolid`                  | `#071226`                                              | Opaque fill used instead of glass on constrained devices                    |
-| `cyan`                        | `#5ff0ff`                                              | Primary signal colour: borders, glyphs, focus ring, active states           |
-| `cyanSoft`                    | `#8af0ff`                                              | Large luminous surfaces in WebGL (logo, card title glow)                    |
-| `blue`                        | `#2a8cff`                                              | Secondary accent                                                            |
-| `green`                       | `#3dff7a`                                              | Brand accent (logo, piping, sneaker glow)                                   |
-| `teal`, `tealMid`, `tealDeep` | `#3fe0cf`, `#1b8f88`, `#0a2f2f`                        | Environment glyphs (floor, data blocks, rain, scene materials). WebGL only. |
-| `deep`                        | `#0d2a4a`                                              | Low-intensity ASCII glyphs                                                  |
-| `ink`                         | `#dbf4ff`                                              | Body text                                                                   |
-| `muted`                       | `#7d9cba`                                              | Secondary text                                                              |
-| `line`, `lineStrong`          | `rgba(95, 240, 255, 0.28)`, `rgba(95, 240, 255, 0.85)` | Hairline rules and their hover state                                        |
+| Token                         | Value                                                  | Used for                                                                                         |
+| ----------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `bg`                          | `#04060b`                                              | Page background, scene background and fog colour, glyph fog colour                               |
+| `panel`                       | `rgba(6, 18, 40, 0.84)`                                | Translucent glass fill of holo panels and buttons                                                |
+| `panelSolid`                  | `#071226`                                              | Opaque fill used instead of glass on constrained devices                                         |
+| `cyan`                        | `#5ff0ff`                                              | Primary signal colour: borders, glyphs, focus ring, active states                                |
+| `cyanSoft`                    | `#8af0ff`                                              | Large luminous surfaces in WebGL (logo, card title glow)                                         |
+| `blue`                        | `#2a8cff`                                              | Secondary accent                                                                                 |
+| `green`                       | `#3dff7a`                                              | Brand accent (logo, piping, sneaker glow)                                                        |
+| `amber`                       | `#ffb547`                                              | Warm accent: the About rug (floor), server-rack LEDs. Exposed as `--amber`, not yet read by CSS. |
+| `alert`                       | `#ff4d5e`                                              | Errors and refusals: bugs, the firewall's ACCESS DENIED, terminal errors, the HUD bug icon       |
+| `teal`, `tealMid`, `tealDeep` | `#3fe0cf`, `#1b8f88`, `#0a2f2f`                        | Environment glyphs (floor, data blocks, rain, scene materials). WebGL only.                      |
+| `deep`                        | `#0d2a4a`                                              | Low-intensity ASCII glyphs                                                                       |
+| `ink`                         | `#dbf4ff`                                              | Body text                                                                                        |
+| `muted`                       | `#7d9cba`                                              | Secondary text                                                                                   |
+| `line`, `lineStrong`          | `rgba(95, 240, 255, 0.28)`, `rgba(95, 240, 255, 0.85)` | Hairline rules and their hover state                                                             |
 
 ## How the tokens reach CSS
 
 1. `src/app/[locale]/layout.tsx` renders `<html style={themeCssVariables()}>`. Every page therefore has these properties on its root element:
 
-   `--bg`, `--panel`, `--panel-solid`, `--cyan`, `--cyan-soft`, `--blue`, `--green`, `--deep`, `--text` (from `ink`), `--muted`, `--line`, `--line-strong`, `--font-mono` and `--font-display`.
+   `--bg`, `--panel`, `--panel-solid`, `--cyan`, `--cyan-soft`, `--blue`, `--green`, `--amber`, `--alert`, `--deep`, `--text` (from `ink`), `--muted`, `--line`, `--line-strong`, `--font-mono` and `--font-display`.
 
 2. CSS modules read them with `var(--…)`. `src/app/globals.css` defines only the motion tokens (`--ease-out`, `--ease-in`) and `color-scheme: dark`.
 3. `layout.tsx` also exports `viewport.themeColor = THEME.bg` for the browser UI colour.

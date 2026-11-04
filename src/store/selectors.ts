@@ -15,6 +15,25 @@ export const selectNearbyCard = (state: RootState) =>
 export const selectIsCharging = (state: RootState) =>
   state.interaction.isCharging;
 
+export const selectBugsFixed = (state: RootState) => state.world.bugsFixed;
+export const selectIsTerminalOpen = (state: RootState) =>
+  state.world.terminalOpen;
+export const selectIsArcadeOpen = (state: RootState) => state.world.arcadeOpen;
+/** A window over the world (terminal or arcade) has the keyboard. */
+export const selectIsModalOpen = (state: RootState) =>
+  state.world.terminalOpen || state.world.arcadeOpen;
+export const selectPortalFallback = (state: RootState) =>
+  state.world.portalFallback;
+
+/** The station prompt shows while exploring next to a station (terminal, arcade, portal). */
+export const selectStationPrompt = (state: RootState) =>
+  state.game.status === "ready" &&
+  state.portfolio.activeSection === null &&
+  !state.world.terminalOpen &&
+  !state.world.arcadeOpen
+    ? state.world.nearbyStation
+    : null;
+
 /** The contextual prompt is shown only while exploring next to a card. */
 export const selectPromptCard = (state: RootState) =>
   state.game.status === "ready" && state.portfolio.activeSection === null
@@ -24,6 +43,7 @@ export const selectPromptCard = (state: RootState) =>
 /**
  * The single explicit application mode, derived from the slices:
  * loading → playing ⇄ interacting (next to a card) → section-open;
+ * the terminal window (opened at its kiosk) is terminal-open;
  * paused overrides while the tab is hidden; error is the WebGL fallback.
  */
 export type AppMode =
@@ -31,6 +51,8 @@ export type AppMode =
   | "playing"
   | "interacting"
   | "section-open"
+  | "terminal-open"
+  | "arcade-open"
   | "paused"
   | "error";
 
@@ -39,6 +61,8 @@ export const selectAppMode = (state: RootState): AppMode => {
   if (state.game.status === "error") return "error";
   if (state.game.paused) return "paused";
   if (state.portfolio.activeSection !== null) return "section-open";
+  if (state.world.terminalOpen) return "terminal-open";
+  if (state.world.arcadeOpen) return "arcade-open";
   if (state.interaction.nearbyCardId !== null) return "interacting";
   return "playing";
 };

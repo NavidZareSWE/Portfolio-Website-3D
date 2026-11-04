@@ -25,6 +25,10 @@ export const THEME = {
   teal: "#3fe0cf",
   tealMid: "#1b8f88",
   tealDeep: "#0a2f2f",
+  /** Warm accent for cosy, lived-in spots (the About rug). */
+  amber: "#ffb547",
+  /** Errors and refusals: bugs, the firewall's ACCESS DENIED. */
+  alert: "#ff4d5e",
   /** Deep glyph colour for low-intensity ASCII. */
   deep: "#0d2a4a",
   /** Text. */
@@ -57,6 +61,8 @@ export function themeCssVariables(): Record<string, string> {
     "--cyan-soft": THEME.cyanSoft,
     "--blue": THEME.blue,
     "--green": THEME.green,
+    "--amber": THEME.amber,
+    "--alert": THEME.alert,
     "--deep": THEME.deep,
     "--text": THEME.ink,
     "--muted": THEME.muted,

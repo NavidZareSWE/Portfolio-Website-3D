@@ -73,6 +73,8 @@ export class InputManager {
   );
 
   private sprintDown = new Set<string>();
+  /** Sprint latched on from the touch controls' toggle (kept until toggled off). */
+  private virtualSprint = false;
   private virtualMoveX = 0;
   private virtualMoveY = 0;
   /** On-screen controls holding the action down (button, prompt, card). */
@@ -103,9 +105,9 @@ export class InputManager {
     return this.controlState.get(control) ?? false;
   }
 
-  /** Shift is held (move faster). */
+  /** Shift is held, or the touch sprint toggle is on (move faster). */
   isSprinting(): boolean {
-    return this.sprintDown.size > 0;
+    return this.sprintDown.size > 0 || this.virtualSprint;
   }
 
   /** Returns true once per physical press of `control`. */
@@ -164,6 +166,16 @@ export class InputManager {
   setVirtualMove(x: number, y: number) {
     this.virtualMoveX = x;
     this.virtualMoveY = y;
+  }
+
+  /**
+   * Latches sprint on or off from the touch controls' toggle. Unlike Shift,
+   * it is a setting: resets (a section opening) and focus loss keep it.
+   */
+  setVirtualSprint(on: boolean) {
+    this.setSprint(() => {
+      this.virtualSprint = on;
+    });
   }
 
   /**

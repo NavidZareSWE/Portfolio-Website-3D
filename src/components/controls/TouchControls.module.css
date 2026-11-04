@@ -19,7 +19,8 @@
 }
 
 .visible .stick,
-.visible .action {
+.visible .action,
+.visible .sprint {
   pointer-events: auto;
 }
 
@@ -186,6 +187,55 @@
 
 .ready .ring circle {
   opacity: 1;
+}
+
+/* --------------------------------------------------------------- sprint */
+
+/* A rounded square in amber: never mistaken for the round cyan JUMP button. */
+.sprint {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 9px;
+  border-radius: 14px;
+  border: 2px dashed rgba(255, 181, 71, 0.7);
+  background: rgba(30, 20, 6, 0.72);
+  color: var(--amber);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  font-family: var(--font-mono);
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  transition:
+    border-color 200ms var(--ease-out),
+    background-color 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out);
+}
+
+.sprintIcon {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sprintState {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.sprintOn {
+  border-style: solid;
+  border-color: var(--amber);
+  background: rgba(92, 58, 8, 0.9);
+  box-shadow: 0 0 18px rgba(255, 181, 71, 0.5);
+}
+
+.captionSprint {
+  color: var(--amber);
+  text-shadow: 0 0 8px rgba(255, 181, 71, 0.55);
 }
 
 /* --------------------------------------------------------------- notice */

@@ -20,7 +20,7 @@ import {
 } from "../Vignette";
 
 /** On the walk from spawn to the Projects card (layout units). */
-export const SCANNER_CENTER = { right: 0, up: 8.3 } as const;
+export const SCANNER_CENTER = { right: 0, up: 10.8 } as const;
 
 const HALF_SPAN = 1.75;
 const OPENING = HALF_SPAN - 0.25;

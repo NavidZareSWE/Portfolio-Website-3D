@@ -10,13 +10,17 @@ import {
   SphereGeometry,
   Vector3,
 } from "three";
+import { CARD_LAYOUT } from "../../cards/CardRegistry";
 import { createRandom } from "../../utils/math";
 import { FlowPath, buildTrack, type GroundPoint } from "../FlowPath";
 import { PropKit, TINT } from "../PropKit";
 import { TextPlane, Vignette, type VignetteContext } from "../Vignette";
 
 /** Beside the Experience card, where the M.Sc. is listed (layout units). */
-export const ROUTING_CENTER = { right: -7.6, up: -16.6 } as const;
+export const ROUTING_CENTER = {
+  right: CARD_LAYOUT.experience.right + 7.4,
+  up: CARD_LAYOUT.experience.up - 4.6,
+} as const;
 
 /** Local layout (x = screen right, z = toward the camera). */
 const SOURCE: GroundPoint = [-3.6, 0];

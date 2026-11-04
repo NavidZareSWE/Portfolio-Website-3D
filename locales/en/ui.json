@@ -34,13 +34,17 @@
     "nodes": "{{count}} NODES",
     "language": "Language",
     "switchTo": "فارسی",
-    "switchToLabel": "Switch to Persian"
+    "switchToLabel": "Switch to Persian",
+    "bugs": "BUGS FIXED",
+    "bugsLabel": "{{count}} bugs fixed. Jump on a bug to squash it."
   },
   "prompt": {
     "hold": "[ HOLD SPACE TO ACCESS ]",
     "holdTouch": "[ HOLD THE GREEN ◉ BUTTON ]",
     "clickHere": "or click and hold here, or on the card",
-    "touchHere": "or touch and hold here, or on the card"
+    "touchHere": "or touch and hold here, or on the card",
+    "stationClick": "or click and hold here",
+    "stationTap": "or touch and hold here"
   },
   "guide": {
     "aria": "Controls: W, A, S and D to move. Space to jump. Hold Space next to a hologram to open it, or click and hold the hologram or its prompt. Hold Shift to sprint.",
@@ -58,7 +62,12 @@
     "moveLabel": "MOVE",
     "jumpLabel": "JUMP",
     "openLabel": "HOLD TO OPEN",
-    "openAria": "Hold to open the hologram"
+    "openAria": "Hold to open the hologram",
+    "sprintLabel": "SPRINT",
+    "sprintOn": "ON",
+    "sprintOff": "OFF",
+    "sprintAria": "Sprint: move faster",
+    "stationAria": "Hold to open {{name}}"
   },
   "loading": {
     "brand": "Portfolio",
@@ -154,7 +163,47 @@
     "routingTradeoff": "QUALITY · COST · LATENCY",
     "smallModel": "SMALL MODEL",
     "largeModel": "LARGE MODEL",
-    "detected": "HACKER DETECTED\n99% ACCURACY"
+    "detected": "HACKER DETECTED\n99% ACCURACY",
+    "firewall": "FIREWALL",
+    "accessDenied": "ACCESS DENIED",
+    "terminal": "TERMINAL\n> type help",
+    "bugFixed": "BUG FIXED",
+    "gitInitial": "initial commit",
+    "gitMerge": "merge",
+    "gitMain": "main: the career line",
+    "gitWork": "work: one branch per role",
+    "gitEdu": "edu: education",
+    "gitCommit": "a commit",
+    "blueprint": "BLUEPRINT",
+    "blueprintPlan": "SITE PLAN",
+    "blueprintRoomA": "STUDIO",
+    "blueprintRoomB": "SERVER ROOM",
+    "arcade": "ARCADE",
+    "warehouse": "PACKAGE WAREHOUSE",
+    "stackSign": "TECH STACK\n> climb it",
+    "stackDone": "FULL STACK ✓",
+    "stackTiers": [
+      "DATABASE · MongoDB · PostgreSQL",
+      "API · Node.js · Express",
+      "FRONTEND · React · Next.js",
+      "BROWSER"
+    ],
+    "portals": {
+      "github": "GITHUB",
+      "linkedin": "LINKEDIN",
+      "telegram": "TELEGRAM",
+      "email": "EMAIL"
+    },
+    "packages": {
+      "react": "Builds every screen of this portfolio",
+      "next": "Routes, static pages and both languages of this site",
+      "three": "Draws this whole 3D world",
+      "typescript": "Types across the whole codebase",
+      "redux": "App state: open section, terminal, bug count",
+      "i18next": "The English and Persian text",
+      "express": "Web servers and REST APIs on Node.js",
+      "mongodb": "Document database"
+    }
   },
   "language": {
     "en": "English",
@@ -176,5 +225,88 @@
       "high": "High",
       "super": "Super detailed"
     }
+  },
+  "terminal": {
+    "title": "Terminal",
+    "label": "Portfolio terminal",
+    "close": "Close the terminal and return to the world",
+    "input": "Command",
+    "welcome": "Welcome to portfolio.sys. Type help to list the commands, or tap one below.",
+    "notFound": "command not found: {{command}}. Type help for the list.",
+    "usage": "usage: {{usage}}",
+    "noProject": "no project {{n}}. Try one of 1–{{count}}.",
+    "noSection": "unknown section: {{name}}. Try about, projects, skills, experience or contact.",
+    "opening": "opening {{name}}…",
+    "sudo": "[sudo] permission granted. Opening the contact channel…",
+    "bugs_zero": "0 bugs fixed so far. Bugs crawl around the open ground: jump on one to squash it.",
+    "bugs_one": "1 bug fixed. Keep jumping!",
+    "bugs_other": "{{count}} bugs fixed. Keep jumping!",
+    "source": "source",
+    "live": "live",
+    "offline": "offline",
+    "help": {
+      "help": "list the commands",
+      "whoami": "who is behind this world",
+      "about": "the longer introduction",
+      "projects": "list the projects",
+      "project": "show one project: project <n>",
+      "skills": "languages, frameworks and tools",
+      "experience": "work history as a git log",
+      "education": "degrees",
+      "contact": "how to reach me",
+      "open": "open a section panel: open <section>",
+      "bugs": "how many bugs you have squashed",
+      "date": "the current date",
+      "clear": "clear the screen",
+      "exit": "close the terminal"
+    },
+    "tabHint": "Tip: press Tab to complete a command or its argument (try \"open a\" then Tab).",
+    "noMatch": "no matches"
+  },
+  "stations": {
+    "terminal": "Terminal",
+    "arcade": "Arcade · ROOT RUN",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "telegram": "Telegram",
+    "email": "Email"
+  },
+  "portal": {
+    "blocked": "The browser kept {{name}} from opening in a new tab.",
+    "open": "Open {{name}} ↗",
+    "dismiss": "Dismiss"
+  },
+  "arcade": {
+    "cabinet": "ROOT RUN",
+    "label": "ROOT RUN arcade game",
+    "screen": "ROOT RUN game screen",
+    "close": "Leave the arcade and return to the world",
+    "tagline": "Keep your phone charged. Hack blocks for root. Squash bugs. Reach the council.",
+    "controls": "← → or A D: run   ·   Space / W / ↑: jump   ·   Esc: leave",
+    "controlsTouch": "◀ ▶ run   ·   ▲ jump",
+    "start": "Press Enter to start",
+    "startTouch": "Tap to start",
+    "level": "LEVEL",
+    "levels": {
+      "localhost": "localhost",
+      "staging": "staging",
+      "production": "production"
+    },
+    "phone": "PHONE",
+    "root": "ROOT ✓",
+    "died": "PHONE DIED",
+    "retry": "Press Enter to try again",
+    "retryTouch": "Tap to try again",
+    "clear": "LEVEL CLEAR",
+    "clearSub": "You took your seat at the council’s table.",
+    "next": "Press Enter for the next level",
+    "nextTouch": "Tap for the next level",
+    "victory": "YOU JOINED THE COUNCIL",
+    "victorySub": "Pull up a chair, hacker. The table is yours.",
+    "again": "Press Enter to play again",
+    "againTouch": "Tap to play again",
+    "left": "Run left",
+    "right": "Run right",
+    "jump": "Jump"
   }
 }

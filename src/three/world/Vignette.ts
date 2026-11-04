@@ -14,13 +14,14 @@ import {
   type Shape,
   type Texture,
 } from "three";
-import { PLAYER } from "../config";
+import { CAMERA, PLAYER } from "../config";
 import type { SceneLabels } from "../labels";
 import type { Collider, CollisionSystem } from "../physics/CollisionSystem";
 import { FONTS } from "@/theme/theme";
 import { MONO_FONT_FAMILY } from "../effects/AsciiAtlas";
 import { SCREEN_ALIGNED_YAW, screenToWorld } from "../utils/math";
 import { CRISP_LAYER } from "../render/CrispComposite";
+import { drawLegibleText } from "./canvasText";
 import { Fader } from "./Fade";
 import { GlyphFigure, type FigureTemplate } from "./GlyphFigure";
 import type { GlyphKit } from "./GlyphKit";
@@ -48,7 +49,10 @@ export interface VignetteContext {
 }
 
 /** Camera elevation seen from the screen-aligned frame (camera is fixed). */
-export const FACE_CAMERA_PITCH = -Math.atan2(1.15, Math.hypot(1.135, 1.45));
+export const FACE_CAMERA_PITCH = -Math.atan2(
+  CAMERA.direction[1],
+  Math.hypot(CAMERA.direction[0], CAMERA.direction[2]),
+);
 
 /**
  * A small scene placed beside a card. Its group is screen-aligned: local +X
@@ -407,20 +411,25 @@ export class TextPlane {
       const width = ctx.measureText(line).width;
       if (width > maxWidth) fontSize *= maxWidth / width;
     }
-    ctx.fillStyle = color;
+    // ...and to its height, leaving room for the outline.
+    fontSize = Math.min(
+      fontSize,
+      (canvas.height * 0.86) / (lines.length * 1.2),
+    );
     ctx.textAlign = options.align ?? "center";
     ctx.textBaseline = "middle";
-    ctx.shadowColor = color;
-    ctx.shadowBlur = fontSize * 0.35;
     const lineHeight = fontSize * 1.2;
     const x = ctx.textAlign === "left" ? fontSize * 0.6 : canvas.width / 2;
     lines.forEach((line, i) => {
       ctx.font = `700 ${fontSize}px ${fontFor(line)}`;
       ctx.direction = fontFor(line) === FONTS.persian ? "rtl" : "ltr";
-      ctx.fillText(
+      // Glow under, dark outline, crisp letters on top (see canvasText.ts).
+      drawLegibleText(
+        ctx,
         line,
         x,
         canvas.height / 2 + (i - (lines.length - 1) / 2) * lineHeight,
+        { color, glow: fontSize * 0.3, outline: fontSize * 0.16 },
       );
     });
     this.texture.needsUpdate = true;

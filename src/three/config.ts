@@ -5,10 +5,10 @@
  */
 
 export const WORLD = {
-  /** Radius the player is clamped to (room for the five card vignettes). */
-  playRadius: 33,
+  /** Radius the player is clamped to (room for the five card vignettes and the districts). */
+  playRadius: 43,
   /** Visible ASCII floor radius (fades out before this). */
-  floorRadius: 62,
+  floorRadius: 80,
   /** ASCII floor cell size. */
   cellSize: 0.3,
   /** Spawn is the origin of the card layout. */
@@ -83,6 +83,8 @@ export const CARD = {
   pedestalRadius: 0.95,
   pedestalHeight: 0.12,
 } as const;
+
+export const REDUCED_MOTION_SPEED = 0.15;
 
 export const GLYPH_FOG = {
   near: 32,

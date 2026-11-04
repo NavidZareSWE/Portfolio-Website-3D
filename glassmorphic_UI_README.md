@@ -13,7 +13,9 @@ All primitives are in `src/components/ui/holo/`:
 | `HoloTrack`               | The progress track. Pass `value` for a React-controlled fill. Or pass `fillRef` to stream progress straight into the element's `transform` without re-rendering, as `InteractionPrompt` does for the hold-to-open charge.                         |
 | `holoButtonClass(extra?)` | Class name for the bracketed `[ LABEL ]` mono button.                                                                                                                                                                                             |
 
-They are used by `InteractionPrompt`, `LanguageSwitch`, `LoadingScreen`, `ModelDetailMenu`, `PortfolioOverlay`, `SectionContent` and `SectionIndex`.
+They are used by `InteractionPrompt`, `LanguageSwitch`, `LoadingScreen`, `ModelDetailMenu`, `PortfolioOverlay`, `SectionContent`, `SectionIndex`, `Terminal`, `Arcade` and `PortalFallback`.
+
+The HUD's bug counter (`BugCounter`, styled in `Hud.module.css`) is a smaller chip outside these primitives: a `var(--panel)` fill with the hairline border and no blur, switching to `var(--panel-solid)` on `html[data-quality="low"]`. The terminal window's output area is a darker, nearly opaque inset (`rgba(2, 8, 12, 0.72)`) inside a `HoloFrame`, so the text stays readable over the world.
 
 ## How the glass is built (`Holo.module.css`)
 

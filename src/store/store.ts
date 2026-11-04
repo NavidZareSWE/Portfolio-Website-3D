@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import gameReducer from "./slices/gameSlice";
 import interactionReducer from "./slices/interactionSlice";
 import portfolioReducer from "./slices/portfolioSlice";
+import worldReducer from "./slices/worldSlice";
 
 /**
  * A new store per request/session (Redux's recommended Next.js App Router
@@ -14,6 +15,7 @@ export function makeStore() {
       game: gameReducer,
       interaction: interactionReducer,
       portfolio: portfolioReducer,
+      world: worldReducer,
     },
   });
 }

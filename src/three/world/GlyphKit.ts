@@ -11,7 +11,7 @@ import {
   type ColorRepresentation,
   type Texture,
 } from "three";
-import { GLYPH_FOG } from "../config";
+import { GLYPH_FOG, REDUCED_MOTION_SPEED } from "../config";
 import {
   ATLAS_CODE_LENGTH,
   ATLAS_CODE_START,
@@ -494,7 +494,7 @@ export class GlyphKit {
   }
 
   setReducedMotion(reduced: boolean) {
-    this.shared.uMotion.value = reduced ? 0.15 : 1;
+    this.shared.uMotion.value = reduced ? REDUCED_MOTION_SPEED : 1;
   }
 
   /** Animation speed factor (0.15 with reduced motion), for motion driven from JS. */

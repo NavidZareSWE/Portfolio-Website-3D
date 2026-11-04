@@ -9,6 +9,9 @@ import Hud from "@/components/ui/Hud";
 import InteractionPrompt from "@/components/ui/InteractionPrompt";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import PortfolioOverlay from "@/components/ui/PortfolioOverlay";
+import Arcade from "@/components/ui/Arcade";
+import PortalFallback from "@/components/ui/PortalFallback";
+import Terminal from "@/components/ui/Terminal";
 import { STAGE_ID } from "@/config/layout";
 import { useIsTouchOnly } from "@/hooks/useMediaQuery";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -63,6 +66,9 @@ export default function ExperienceShell() {
       <InteractionPrompt touchMode={isTouchOnly} />
       {isTouchOnly ? <TouchControls /> : <WASDGuide />}
       <PortfolioOverlay />
+      <Terminal />
+      <Arcade />
+      <PortalFallback />
       <LoadingScreen />
     </ExperienceContext.Provider>
   );

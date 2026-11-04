@@ -45,6 +45,25 @@ const CODE = "0123456789ABCDEF{}[]()<>/\\|;:=+-*#$%&@!?^~_<>xyz01"
 
 export const MONO_FONT_FAMILY = FONTS.mono;
 
+/** Every glyph in atlas order (index = position in this list). */
+export const ATLAS_GLYPHS: readonly string[] = [...RAMP, ...CODE];
+
+const GLYPH_LOOKUP = new Map<string, number>();
+ATLAS_GLYPHS.forEach((glyph, i) => {
+  if (!GLYPH_LOOKUP.has(glyph)) GLYPH_LOOKUP.set(glyph, i);
+});
+
+/**
+ * Atlas index of a character, or -1 if the atlas does not draw it. The
+ * atlas holds digits, A–F, x/y/z and code punctuation, so floor text is
+ * limited to hex, numbers and symbols (lowercase a–f map to uppercase).
+ */
+export function glyphIndex(char: string): number {
+  const direct = GLYPH_LOOKUP.get(char);
+  if (direct !== undefined) return direct;
+  return GLYPH_LOOKUP.get(char.toUpperCase()) ?? -1;
+}
+
 export function createAsciiAtlas(maxAnisotropy: number): CanvasTexture {
   const cell = 64;
   const size = cell * ATLAS_GRID;
@@ -61,8 +80,7 @@ export function createAsciiAtlas(maxAnisotropy: number): CanvasTexture {
   ctx.textBaseline = "middle";
   ctx.font = `700 ${cell * 0.74}px ${MONO_FONT_FAMILY}`;
 
-  const glyphs = [...RAMP, ...CODE];
-  glyphs.forEach((glyph, i) => {
+  ATLAS_GLYPHS.forEach((glyph, i) => {
     const col = i % ATLAS_GRID;
     const row = Math.floor(i / ATLAS_GRID);
     ctx.fillText(

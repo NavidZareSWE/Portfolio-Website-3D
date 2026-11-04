@@ -67,20 +67,48 @@ In development the browser console prints which model was loaded, why, and what 
 
 ## Controls
 
-| Input                  | Action                                                                                                        |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
-| W A S D / arrows       | Move (screen-relative, diagonals normalised)                                                                  |
-| Shift (held)           | Sprint: 1.6× speed, same animation (`PLAYER.sprintMultiplier`); shown on the guide's bottom row next to Space |
-| DETAIL button          | Player model detail: Auto or one of five tiers (saved in this browser)                                        |
-| Space                  | Jump (when no card is nearby)                                                                                 |
-| Hold Space near a card | Open that section (never jumps)                                                                               |
-| Press and hold a card  | Mouse button or finger on the face of the card you are standing at, or on its prompt: same as holding Space   |
-| Esc / close button     | Return to the world (same position)                                                                           |
-| Index button           | Open any section directly (keyboard and screen-reader friendly)                                               |
+| Input                       | Action                                                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| W A S D / arrows            | Move (screen-relative, diagonals normalised)                                                                  |
+| Shift (held)                | Sprint: 1.6× speed, same animation (`PLAYER.sprintMultiplier`); shown on the guide's bottom row next to Space |
+| DETAIL button               | Player model detail: Auto or one of five tiers (saved in this browser)                                        |
+| Space                       | Jump (when no card is nearby)                                                                                 |
+| Hold Space near a card      | Open that section (never jumps)                                                                               |
+| Hold Space at the terminal  | Open the terminal (type `help`; Tab completes; Esc or `exit` closes it)                                       |
+| Hold Space in a portal      | Open that link: GitHub, LinkedIn, Telegram or email (if the browser blocks the tab, a link to click appears)  |
+| Hold Space at the arcade    | Play ROOT RUN (← → / A D run, Space / W / ↑ jump, Enter start or continue, Esc leave; touch: on-screen pad)   |
+| Jump onto a warehouse crate | Shows that package's name and what it does                                                                    |
+| SPRINT toggle (touch)       | Latches sprint on or off on touch devices (the amber square between MOVE and JUMP)                            |
+| Jump onto a bug             | Squash it; the HUD counts the bugs fixed                                                                      |
+| Walk into a glyph cube      | Push it (cubes stop at obstacles; they are low enough to jump onto)                                           |
+| Press and hold a card       | Mouse button or finger on the face of the card you are standing at, or on its prompt: same as holding Space   |
+| Esc / close button          | Return to the world (same position)                                                                           |
+| Index button                | Open any section directly (keyboard and screen-reader friendly)                                               |
 
-Touch-only devices get a virtual stick (labelled MOVE) and an action button (labelled JUMP). Next to a card the action button turns green and pulses, its label changes to HOLD TO OPEN, and a ring around it fills while it is held; the card prompt ("HOLD THE GREEN ◉ BUTTON") sits above both controls.
+Touch-only devices get a virtual stick (labelled MOVE), an action button (labelled JUMP) and, between them, a SPRINT toggle (an amber rounded square showing ON or OFF) that latches sprint on until it is tapped again. Next to a card the action button turns green and pulses, its label changes to HOLD TO OPEN, and a ring around it fills while it is held; the card prompt ("HOLD THE GREEN ◉ BUTTON") sits above both controls.
 
 However a hold is made (Space, the action button, or pressing the card or the prompt), a stroke runs clockwise around the card's edge from the top centre while it is held, over a dimmed track, and the rest of the edge lights up as it fills; the prompt's track and the action button's ring fill at the same time. Only the card the hacker is standing at can be pressed, and the mouse cursor turns into a pointer over it. A short click does nothing, the same as tapping Space.
+
+## The world
+
+Beyond the five cards, the world has a few things to find and play with:
+
+- **District floors.** Some sections' corners have their own pattern in the glyph floor (`src/three/world/districts.ts`), with readable labels lying on the floor (`world/FloorLabel.ts`, `vignettes/DistrictLabels.ts`):
+  - **Experience:** a `git log --graph` with a header and legend. `main` is the career line; each role is its own branch that forks from main and merges back, with a label showing its hash, period, title and organisation; the degrees sit on a long-running `edu` branch. The newest entry is at the top (HEAD).
+  - **Projects:** a blueprint sheet in front of the build site: dotted blue paper, a double frame, the plan of a building (walls, an inner wall, the entrance, windows), dimension lines, room names, a north mark and a title block ("BLUEPRINT · projects.build() · SITE PLAN 1:50").
+  - **About:** a woven amber rug with potted plants and a beanbag.
+- **Landing shockwave.** A real landing (a jump or a drop, not a small step) sends a ring of shuffling glyphs across the floor. It is turned off with reduced motion.
+- **Bugs.** Red glyph bugs crawl around the open ground and scatter when you come close. Landing on one squashes it ("BUG FIXED"), the HUD counter goes up, and a new bug crawls out elsewhere a few seconds later.
+- **Glyph cubes.** Five cubes near the middle can be pushed by walking into them.
+- **Terminal.** A kiosk near spawn; hold Space there (as at a card) to open a small shell: `help [command]`, `whoami`, `about`, `projects`, `project <n>`, `skills`, `experience` (also `git log`), `education`, `contact`, `open <section>`, `bugs`, `date`, `clear`, `exit`. Its output comes from the same locale files as the section panels. Tab completes the command and the first argument of `open`, `project`, `help`, `git` and `sudo` (for example `open a` → `open about`); when several options match, it fills in their shared start and lists them (`project` lists the numbers with the project titles). The arrow keys walk the history, and the buttons under the output run the common commands on touch devices.
+- **Size.** The play area has a 43 m radius (it was 33 m); the cards, the scenes beside them and the data-block clusters were spread out to match.
+- **Right of Skills.** A package warehouse ("./node_modules"): a row of crates stamped with packages (react, next, three, typescript, @reduxjs/toolkit, i18next, express, mongodb); jump on one and its name and use pop up. Behind them, two shelf units and a forklift bot driving up and down the aisle. Beside it, the tech stack as a tower you climb: database, API, frontend, browser; on top a beam lights up with "FULL STACK".
+- **Right of Contact.** Four portals (GitHub, LinkedIn, Telegram, email) with their icons; stand inside one and hold Space to open it. And an arcade cabinet with ROOT RUN.
+- **ROOT RUN** (`src/arcade/`, played in `components/ui/Arcade.tsx`). A three-level side-scroller (localhost, staging, production). Your phone's battery is your health: five bars (red, orange, amber, lime, green as it fills) that drain one every nine seconds; each battery pickup adds a bar, a bug's bite or a fall takes one, and an empty phone ends the run (retry the level). The battery icon follows the battery indicator design by Rafał ([codepen.io/Incorr3ct/pen/poBKwzY](https://codepen.io/Incorr3ct/pen/poBKwzY), MIT licence), redrawn on the canvas in the site's colours. Jumping into a `</>` block from below releases a root patch: picking it up gives ROOT ACCESS, which absorbs the next bite. Land on bugs to squash them. Each level ends in the council's cave, where the hacker takes the empty seat at the table. The levels are ASCII maps in `src/arcade/levels.ts`.
+- **Firewall.** The edge of the play area is a curtain of code glyphs that shows only near the player and flares red with "FIREWALL / ACCESS DENIED" where the player pushes against it.
+- **Beyond the firewall.** Server racks with blinking LEDs, lattice radio masts with red beacons, and a giant scrolling terminal billboard past the top edge (tilted toward the camera, with the name plate along its bottom).
+
+Positions of all of these live in `src/three/world/layout.ts`, so a floor pattern, its props and its colliders move together.
 
 ## Where things live
 
@@ -97,14 +125,16 @@ src/
   content/                section ids, card codes and ASCII art; contact links; skill lists (no copy)
   config/layout.ts        overlay panel sizes shared by CSS and the camera; the stage element id
   hooks/                  media-query hooks; close-on-outside-click/Escape hook for the HUD menus
-  store/                  Redux Toolkit: game, interaction, portfolio slices + selectors
+  store/                  Redux Toolkit: game, interaction, portfolio, world slices + selectors
   theme/theme.ts          single palette and fonts, used by CSS and by the WebGL scene
   three/                  Experience (single loop), camera, input, physics, character,
                           cards, ASCII effects (glyph floor, glyph blocks, digital rain)
   three/quality/          render quality (adaptive resolution), player-model tier choice, text resolution per tier
   three/render/           CrispComposite: card faces and signs at full resolution over a downscaled world
   three/world/            the scenes beside each card: glyph materials (GlyphKit), posable
-                          glyph figures (GlyphFigure + poses), merged props (PropKit), vignettes/
+                          glyph figures (GlyphFigure + poses), merged props (PropKit), vignettes/;
+                          layout.ts (positions of the newer elements), districts.ts (floor patterns)
+  three/play/             things to play with: pushable cubes, bugs
 locales/{en,fa}/*.json   ALL copy, one file per i18next namespace
 scripts/dev.mjs           `npm run dev` wrapper (development-only --lod/--gpu/--net switches)
 scripts/i18n-push.mjs     `npm run i18n:push`: uploads edited locales/ JSON to i18nexus (skips ui)
@@ -137,7 +167,7 @@ Namespaces in `locales/{en,fa}/`:
 
 **Where the translation files come from.** `npm run dev`, `npm run build` and `npm start` each run `i18nexus pull` first. The pull downloads every namespace of the i18nexus project into `locales/<lng>/<ns>.json`. `npm run i18n:pull` runs the pull on its own.
 
-- **`ui` is committed, everything else comes from i18nexus.** `.gitignore` ignores the JSON files in `locales/` except `ui.json`. Adding `ui` (119 strings per language) to i18nexus would put the project over its plan's string limit (the import is refused with HTTP 403), so `ui` lives in the repository instead.
+- **`ui` is committed, everything else comes from i18nexus.** `.gitignore` ignores the JSON files in `locales/` except `ui.json`. Adding `ui` (225 keys per language as of 2026-11-04, counting each array as one key) to i18nexus would put the project over its plan's string limit (the import is refused with HTTP 403), so `ui` lives in the repository instead.
 - **The i18nexus project must not have a `ui` namespace**, not even an empty one. The pull writes every namespace it gets, so an empty `ui` in i18nexus would overwrite the committed `ui.json` with `{}` and the site would show raw keys such as `hud.index`.
 - **Changing text in the other namespaces:** edit the JSON, then run `npm run i18n:push` (`scripts/i18n-push.mjs`) **before** `dev`, `build` or `start`, because their pull overwrites unpushed edits. `--dry-run` lists the differences without sending anything. The script skips `ui` (`LOCAL_ONLY_NAMESPACES`) and needs `I18NEXUS_PERSONAL_ACCESS_TOKEN` (import strings, create namespaces) in `.env`; Vercel does not need it.
 - **Changing text in `ui`:** edit `locales/<lng>/ui.json` and commit it.
@@ -195,7 +225,8 @@ The connection only decides how much is downloaded, which affects loading time; 
 
 Text inside the world (card faces, scene signs) stays sharp independently of the render scale:
 
-- **Separate text pass** (`three/render/CrispComposite.ts`). When the adaptive resolution lowers the render scale below the tier's text scale, the world is rendered into a smaller target, stretched onto the canvas with its depth, and the card faces and signs (layer `CRISP_LAYER`) are rendered on top at the text scale, still hidden behind nearer objects. At or above the text scale everything is one pass, as before. The world pass applies the same tone mapping and colour conversion as the canvas, so it looks identical, and no extra shader variants are compiled (one small copy shader). Off for software rendering.
+- **Separate text pass** (`three/render/CrispComposite.ts`). When the adaptive resolution lowers the render scale below the tier's text scale, the world is rendered into a smaller target, stretched onto the canvas with its depth, and the card faces and signs (layer `CRISP_LAYER`) are rendered on top at the text scale, still hidden behind nearer objects. At or above the text scale everything is one pass, as before. The world pass applies the same tone mapping and colour conversion as the canvas, so it looks identical, and no extra shader variants are compiled (one small copy shader). With software rendering it runs at 1x: the world drops to 0.5–0.75 there and text at that scale was hard to read (the measured cost in the software test browser was about 5 % of the frame rate).
+- **How the text is drawn** (`three/world/canvasText.ts`). Signs, floor labels and card faces draw each string as a soft glow underneath, a dark outline, and the letters on top with no blur. A single fill with a canvas shadow had blurred the letter edges as well. Floor labels (`world/FloorLabel.ts`) also sit on a dark rounded plate, so they read over the bright glyph floor.
 - **Card faces** (`three/cards/cardFace.ts`) are drawn at a multiple of their 768×1120 layout, large enough for the card at its biggest on the current screen (about 55% of the viewport height, with 25% oversampling), and with smaller ASCII cells on the higher tiers, so the artwork has more characters. The faces are redrawn, one per frame, when the tier changes or the window settles at a size that needs another resolution.
 - **Sampling.** Higher tiers sample the face with a negative mip bias (sharper while the card is small on screen). The face's scanlines fade out where they would be finer than about two screen pixels, and the colour fringe is limited to 0.6 of a screen pixel, so neither softens the text.
 
@@ -270,7 +301,7 @@ Scenes live in `src/three/world/vignettes/`; their placement relative to each ca
 
 The world is fill-bound: the simulation takes under a millisecond per frame, and nearly all of the frame is spent shading pixels. Without a GPU the browser rasterises WebGL on the CPU (SwiftShader, llvmpipe, WARP), where every pixel and triangle counts. What the site does about it:
 
-- **Adaptive resolution** (`three/quality/Quality.ts`). Once a second the average frame time is checked. Below 48 fps the render scale drops (two steps if below about 29 fps); above 57 fps it rises one step after 4 s, and an increase that has to be undone blocks the next one for twice as long. It ranges from 0.5 up to the device pixel ratio (at most 2). On a GPU, card faces and signs keep their own scale while the rest of the world goes lower (see "Text resolution").
+- **Adaptive resolution** (`three/quality/Quality.ts`). Once a second the average frame time is checked. Below 48 fps the render scale drops (two steps if below about 29 fps); above 57 fps it rises one step after 4 s, and an increase that has to be undone blocks the next one for twice as long. It ranges from 0.5 up to the device pixel ratio (at most 2). Card faces and signs keep their own scale while the rest of the world goes lower (see "Text resolution").
 - **Device profile.** Software rendering is detected (`failIfMajorPerformanceCaveat`, then the renderer string). It starts at a 0.75 render scale with a ceiling of 1, without MSAA, with 2× instead of 8× anisotropic filtering (the same look from this camera, half the floor's sampling cost), and the automatic player model is very-low (see "Which player model loads"). GPUs start at 1.5 and keep MSAA and 8× filtering.
 - **Floor in two passes** (`effects/AsciiFloor.ts`). Everything except a glyph's shape is constant across a floor cell, and a cell covers hundreds of pixels. The cell field is evaluated once per visible cell into a small texture, and the floor shader only looks it up. Output matches the single-pass shader to within 3/255 (checked pixel by pixel).
 - **Overdraw.** The floor draws after the other opaque objects and the rain backdrop draws last, so covered pixels are rejected by the depth test before their shaders run.
@@ -290,11 +321,13 @@ In the CPU-only test browser here, at 1440×900, one frame at spawn went from ab
 | Per frame, start view (1280×800)                                                        | 67 draw calls (including the floor's field pass), about 92k triangles                                                                           |
 | Per frame, busiest view measured (Experience table with the About scenes also in frame) | 288 draw calls, about 214k triangles, measured before the résumé scenes, which add up to 16 calls and about 5k triangles where they are in view |
 
+The draw-call and triangle figures above were measured before the world additions of 2026-11-04 (district floors, horizon, firewall, bugs, cubes, terminal), which add draw calls where they are in view. Those additions were measured only relatively, in the same software-GPU test browser at a fixed 0.54 render scale (960×600, start view): about 15–16 frames per second before them and about 13–15 after, within run-to-run noise. Drawing the firewall as a full ring had cost about 30 % in that test, so it is drawn as a short arc that follows the player and only near the edge.
+
 Frame rate was **not** measured on real hardware: the test browser here renders on a software GPU, so its numbers say nothing about real devices.
 
 ## Potentially unused code (kept for now)
 
-The maintenance pass on 2026-10-17 found the items below. They have no references in this repository: the search covered TypeScript references across `src/`, plus text searches of `src/`, `locales/`, `public/`, `scripts/` and `tools/`. **All of them are intentionally kept for now.** Code can still be used in ways a search cannot see (external links, keys built at runtime, future features), so review each item before removing it.
+The maintenance pass on 2026-10-17 found the items below; the list was rechecked on 2026-11-04 (`isSectionId` is now used by the terminal and has left the list). They have no references in this repository: the search covered TypeScript references across `src/`, plus text searches of `src/`, `locales/`, `public/`, `scripts/` and `tools/`. **All of them are intentionally kept for now.** Code can still be used in ways a search cannot see (external links, keys built at runtime, future features), so review each item before removing it.
 
 **Symbols with no references:**
 
@@ -303,21 +336,20 @@ The maintenance pass on 2026-10-17 found the items below. They have no reference
 | `src/store/selectors.ts`      | `selectNearbyCard`                          |
 | `src/three/world/Vignette.ts` | `themeColor`                                |
 | `src/three/world/poses.ts`    | `SEAT_HEIGHT`, `DESK_HEIGHT`, `STAND_REACH` |
-| `src/types/index.ts`          | `isSectionId`                               |
 
 **Exported, but only used inside their own file.** The code is active; only the `export` keyword is unused.
 
 - `i18nConfig.ts`: `Locale`
 - `src/components/controls/wobble.ts`: `WOBBLE`
 - `src/hooks/useMediaQuery.ts`: `useMediaQuery`
-- `src/store/`: `AppMode`, `GameState`, `InteractionState`, `PortfolioState`
+- `src/store/`: `AppMode`, `GameState`, `InteractionState`, `PortfolioState`, `WorldState`
 - `src/three/`:
   - `Experience.ts`: `ExperienceEvents`, `ExperienceOptions`
   - `cards/CardRegistry.ts`: `CardFaceAssets`
   - `cards/HolographicCard.ts`: `SharedCardResources`
   - `cards/cardFace.ts`: `CARD_FACE_W`, `CARD_FACE_H`, `CardFaceResult`
   - `character/`: `AnimationInput`, `ControllerFrameEvents`, `LOGO_URL`
-  - `effects/`: `ATLAS_GRID`, `MAX_FLOOR_CARDS`
+  - `effects/`: `ATLAS_GRID`, `ATLAS_GLYPHS`, `MAX_FLOOR_CARDS`, and in `FloorDecals.ts` `FLOOR_COLOR`, `FloorColor`, `FLOOR_ANIM`, `FloorAnim`, `FLOOR_FIELD_OFFSET`, `FLOOR_FIELD_SIZE`
   - `input/InputManager.ts`: `InputEvents`
   - `interaction/InteractionSystem.ts`: `InteractionCallbacks`
   - `quality/`: `MODEL_TIERS`, `DetailDecision`, `detectGpu`, `QualityProfile`
@@ -326,10 +358,10 @@ The maintenance pass on 2026-10-17 found the items below. They have no reference
 
 **Files and content:**
 
-- **Icons:** `public/icons/envelope-at-fill.svg`, `envelope-at.svg`, `github.svg`, `linkedin.svg`, `location.svg` and `telegram.svg` are not referenced by the code or the locale files.
+- **Icons:** `public/icons/envelope-at-fill.svg` and `location.svg` are not referenced by the code or the locale files (`envelope-at.svg`, `github.svg`, `linkedin.svg` and `telegram.svg` are now used by the social portals).
 - **Locale keys in `ui`:** `hud.language`, `touch.stick`, `about.downloadCv`, `contact.channels`, `contact.location`, `contact.openMap`, `language.en` and `language.fa`.
 - **Locale keys in shared namespaces:** `common` has `country`, `lastName`, `navbar.back` and `pronoun`; `contactus` has `contactus.contactUs`. These two namespaces are shared with the main site's i18nexus project, so `npm run i18n:pull` would bring the keys back.
-- **CSS variables:** `--cyan-soft` and `--deep` are set by `themeCssVariables()`, but no stylesheet reads them. Their theme tokens are used in WebGL.
+- **CSS variables:** `--cyan-soft`, `--deep` and `--amber` are set by `themeCssVariables()`, but no stylesheet reads them. Their theme tokens are used in WebGL.
 
 **Overlapping helpers, kept separate on purpose** (they behave differently):
 

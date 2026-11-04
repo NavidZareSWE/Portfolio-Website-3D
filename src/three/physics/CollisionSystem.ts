@@ -30,10 +30,12 @@ export class CollisionSystem {
   /**
    * Pushes a circle of `radius` (at `position.xz`) out of every collider it is
    * not standing on top of, then keeps it inside the circular play area.
-   * Mutates `position` in place; allocation-free.
+   * Mutates `position` in place; allocation-free. `ignore` is skipped (a
+   * moving body resolving against everything but its own collider).
    */
-  resolve(position: Vector3, radius: number) {
+  resolve(position: Vector3, radius: number, ignore?: Collider) {
     for (const c of this.colliders) {
+      if (c === ignore) continue;
       // Surfaces within step height are climbed (see groundHeightAt), not blocked.
       // This also keeps a player resting on a surface from being pushed off it.
       if (position.y >= c.top - PLAYER.stepHeight) continue;

@@ -11,7 +11,7 @@ import {
   type Texture,
   type Camera,
 } from "three";
-import type { SectionId } from "@/types";
+import type { SectionId, StationId } from "@/types";
 import { CameraController } from "./camera/CameraController";
 import { CardRegistry } from "./cards/CardRegistry";
 import { Character, loadCharacterModel } from "./character/Character";
@@ -23,7 +23,7 @@ import {
   parseLogoShapes,
 } from "./character/logo";
 import { renderCharacterPortrait } from "./character/portrait";
-import { PLAYER, RENDER } from "./config";
+import { INTERACTION, PLAYER, REDUCED_MOTION_SPEED, RENDER } from "./config";
 import { DEFAULT_LABELS, type SceneLabels } from "./labels";
 import {
   AdaptiveResolution,
@@ -57,6 +57,8 @@ import { FONTS } from "@/theme/theme";
 import { InputManager } from "./input/InputManager";
 import { InteractionSystem } from "./interaction/InteractionSystem";
 import { CollisionSystem } from "./physics/CollisionSystem";
+import { Bugs } from "./play/Bugs";
+import { PushCubes } from "./play/PushCubes";
 import { createEnvironment, type Environment } from "./scene/createEnvironment";
 import { createScene, type SceneLights } from "./scene/createScene";
 import { loadGlyphTemplate, type FigureTemplate } from "./world/GlyphFigure";
@@ -65,6 +67,7 @@ import {
   loadMaskTextures,
   type Vignettes,
 } from "./world/createVignettes";
+import type { WorldStation } from "./world/stations";
 import { disposeObject } from "./utils/disposeResources";
 import { EventEmitter } from "./utils/EventEmitter";
 import { damp } from "./utils/math";
@@ -80,6 +83,15 @@ export interface ExperienceEvents {
   pausedChange: boolean;
   /** Player model detail: choice, shown tier, automatic tier, loading state. */
   modelDetail: ModelDetailState;
+  /** Bugs squashed by one landing (usually 1). */
+  bugsSquashed: number;
+  /** The station (terminal, arcade, portal) the player stands at, or null. */
+  stationNearbyChange: StationId | null;
+  /**
+   * Space was held at a station until the hold completed. The terminal and
+   * the arcade have already put the world into modal mode (`setModalOpen`).
+   */
+  stationActivated: StationId;
 }
 
 export interface ModelDetailState {
@@ -148,6 +160,17 @@ export class Experience {
   private controller: CharacterController | null = null;
   private animation: CharacterAnimation | null = null;
   private interaction: InteractionSystem | null = null;
+  private cubes: PushCubes | null = null;
+  private bugs: Bugs | null = null;
+  /** A window over the world (terminal, arcade) takes the keyboard. */
+  private modalOpen = false;
+  private stations: WorldStation[] = [];
+  private nearbyStation: WorldStation | null = null;
+  /** Hold-to-use at a station, the same timing and progress stream as a card. */
+  private stationCharging = false;
+  private stationProgress = 0;
+  /** Strongest landing in the frame's sub-steps (drives the shockwave). */
+  private landingImpact = 0;
   private resizeObserver: ResizeObserver | null = null;
   private abort = new AbortController();
 
@@ -349,6 +372,24 @@ export class Experience {
     }
   }
 
+  /**
+   * Mirrors whether a window over the world (the terminal or the arcade) is
+   * open. While one is, the world ignores gameplay input, like an open section.
+   */
+  setModalOpen(open: boolean) {
+    if (open === this.modalOpen) return;
+    this.modalOpen = open;
+    this.stationCharging = false;
+    this.stationProgress = 0;
+    this.input.reset();
+    this.controller?.cancelJumpRequest();
+    this.interaction?.reset();
+    if (!open && this.controller && this.interaction) {
+      this.interaction.resync(this.controller.position);
+      this.events.emit("stationNearbyChange", this.nearbyStation?.id ?? null);
+    }
+  }
+
   /** Current model-detail state (null until the world is loaded). */
   get modelDetail(): ModelDetailState | null {
     return this.detail;
@@ -417,6 +458,7 @@ export class Experience {
     this.reducedMotion = reduced;
     this.environment?.setReducedMotion(reduced);
     this.vignettes?.setReducedMotion(reduced);
+    this.cubes?.setReducedMotion(reduced);
     this.cameraController?.setReducedMotion(reduced);
   }
 
@@ -520,7 +562,12 @@ export class Experience {
     this.cardFocus.length = 0;
     this.cards.cards.forEach(() => this.cardFocus.push(0));
 
-    this.environment = createEnvironment(atlas, logoMask, collisions);
+    this.environment = createEnvironment(
+      atlas,
+      logoMask,
+      collisions,
+      this.labels,
+    );
     this.cards.cards.forEach((card, i) =>
       this.environment!.floor.setCardPosition(i, card.anchor),
     );
@@ -537,6 +584,12 @@ export class Experience {
       maskTextures: assets.maskTextures,
     });
     scene.add(this.vignettes.group);
+    this.stations = this.vignettes.stations;
+
+    this.cubes = new PushCubes(atlas, collisions);
+    scene.add(this.cubes.mesh);
+    this.bugs = new Bugs(this.vignettes.kit, collisions, this.labels);
+    scene.add(this.bugs.group);
 
     this.controller = new CharacterController(collisions);
     this.animation = new CharacterAnimation(this.character.rig);
@@ -607,6 +660,7 @@ export class Experience {
 
     const steps = Math.max(1, Math.ceil(frame / MAX_STEP));
     const dt = frame / steps;
+    this.landingImpact = 0;
     for (let i = 0; i < steps; i++) this.simulate(dt);
 
     this.updateVisuals(frame);
@@ -619,7 +673,7 @@ export class Experience {
   private simulate(dt: number) {
     const controller = this.controller!;
     const interaction = this.interaction!;
-    const exploring = this.activeSection === null;
+    const exploring = this.activeSection === null && !this.modalOpen;
 
     let move = this.zeroMove;
     if (exploring) {
@@ -627,33 +681,52 @@ export class Experience {
 
       // 1. Proximity first, so Space is resolved against the current zone.
       interaction.updateProximity(controller.position);
+      this.updateStationProximity();
 
-      // 2. Space: interaction has priority over jumping near a card.
+      // 2. Space: a card has priority, then a station, then jumping.
       if (this.input.consumePress("Space")) {
-        if (!interaction.handleActionPress()) controller.requestJump();
+        if (interaction.handleActionPress()) {
+          // Holding to open the card.
+        } else if (this.nearbyStation) {
+          if (!this.stationCharging) {
+            this.stationCharging = true;
+            this.events.emit("chargeChange", true);
+          }
+        } else {
+          controller.requestJump();
+        }
       }
 
       // 3. Hold progress uses the live key state (release cancels).
       interaction.updateCharge(dt, this.input.isDown("Space"));
+      this.updateStationCharge(dt, this.input.isDown("Space"));
     } else {
       // Section open: drop any stray press edges.
       this.input.consumePress("Space");
     }
 
     // Activation inside updateCharge may have just opened a section.
-    const stillExploring = this.activeSection === null;
+    const stillExploring = this.activeSection === null && !this.modalOpen;
     // Turn toward the card being opened while Space is held.
     const chargingCard =
       stillExploring && interaction.chargingId
         ? this.cards!.get(interaction.chargingId)
         : undefined;
-    controller.setFaceTarget(chargingCard?.anchor ?? null);
+    controller.setFaceTarget(
+      chargingCard?.anchor ??
+        (stillExploring && this.stationCharging
+          ? (this.nearbyStation?.anchor ?? null)
+          : null),
+    );
 
+    // Cubes move first; the player is then resolved against their new place.
+    this.cubes?.push(dt, controller.position, controller.velocity);
     const events = controller.update(
       dt,
       stillExploring ? move : this.zeroMove,
       stillExploring && this.input.isSprinting(),
     );
+    this.landingImpact = Math.max(this.landingImpact, events.landingImpact);
 
     this.animation!.update({
       dt,
@@ -670,7 +743,7 @@ export class Experience {
   private updateVisuals(frame: number) {
     const controller = this.controller!;
     const interaction = this.interaction!;
-    const motion = this.reducedMotion ? 0.15 : 1;
+    const motion = this.reducedMotion ? REDUCED_MOTION_SPEED : 1;
 
     this.syncCharacterTransform();
     this.updateFootsteps(frame);
@@ -697,6 +770,8 @@ export class Experience {
 
     this.environment!.update(this.elapsed, controller.position, this.cardFocus);
     this.vignettes!.update(this.elapsed, frame, controller.position);
+    this.cubes!.update(this.elapsed);
+    this.bugs!.update(this.elapsed, frame, controller.position, motion);
     this.cameraController!.update(
       frame,
       controller.position,
@@ -714,13 +789,19 @@ export class Experience {
     const floor = this.environment!.floor;
     const onFloor = controller.grounded && controller.position.y < 0.05;
     if (onFloor && !this.wasOnFloor) {
-      floor.addStep(
-        controller.position.x,
-        controller.position.z,
-        this.elapsed,
-        1.3,
-      );
+      const { x, z } = controller.position;
+      floor.addStep(x, z, this.elapsed, 1.3);
       this.stepDistance = 0;
+      // A real landing (a jump or a drop, not a small step down) sends a
+      // shockwave across the floor and squashes any bug underfoot.
+      if (this.landingImpact > 4) {
+        floor.addShockwave(x, z, this.elapsed, (this.landingImpact - 3) / 8);
+        const squashed = this.bugs?.squashAt(x, z, this.elapsed) ?? 0;
+        if (squashed > 0) {
+          floor.addShockwave(x, z, this.elapsed + 0.12, 1);
+          this.events.emit("bugsSquashed", squashed);
+        }
+      }
     }
     this.wasOnFloor = onFloor;
     if (!onFloor || controller.groundSpeed < 0.4) return;
@@ -738,6 +819,79 @@ export class Experience {
       this.elapsed,
       sprinting ? 3.2 : 1.5,
     );
+  }
+
+  /** Advances (or drains) the hold at a station; a full hold uses it. */
+  private updateStationCharge(dt: number, held: boolean) {
+    const station = this.nearbyStation;
+    if (this.stationCharging) {
+      if (!held || !station) {
+        this.stationCharging = false;
+        this.events.emit("chargeChange", false);
+        return;
+      }
+      this.stationProgress = Math.min(
+        1,
+        this.stationProgress + dt / INTERACTION.holdDuration,
+      );
+      this.events.emit("chargeProgress", this.stationProgress);
+      if (this.stationProgress >= 1) {
+        this.stationCharging = false;
+        this.stationProgress = 0;
+        this.events.emit("chargeChange", false);
+        this.events.emit("chargeProgress", 0);
+        if (station.opensWindow) this.setModalOpen(true);
+        // The Space that completed the hold must be released before it acts again.
+        else this.input.reset();
+        station.onActivate?.();
+        this.events.emit("stationActivated", station.id);
+      }
+      return;
+    }
+    if (this.stationProgress > 0) {
+      this.stationProgress = Math.max(
+        0,
+        this.stationProgress - dt * INTERACTION.drainRate,
+      );
+      this.events.emit("chargeProgress", this.stationProgress);
+    }
+  }
+
+  /**
+   * The closest station whose range contains the player (with hysteresis),
+   * unless a card is nearby. Emits only on change.
+   */
+  private updateStationProximity() {
+    const controller = this.controller;
+    if (!controller) return;
+    let next: WorldStation | null = null;
+    if (this.interaction?.nearbyId === null) {
+      let best = Infinity;
+      for (const station of this.stations) {
+        const dx = controller.position.x - station.anchor.x;
+        const dz = controller.position.z - station.anchor.z;
+        const limit =
+          station === this.nearbyStation
+            ? station.radius + 0.4
+            : station.radius;
+        const d2 = dx * dx + dz * dz;
+        if (d2 < limit * limit && d2 < best) {
+          best = d2;
+          next = station;
+        }
+      }
+    }
+    if (next === this.nearbyStation) return;
+    this.nearbyStation?.setNearby(false);
+    this.nearbyStation = next;
+    next?.setNearby(true);
+    if (this.stationCharging) {
+      this.stationCharging = false;
+      this.events.emit("chargeChange", false);
+    }
+    this.stationProgress = 0;
+    this.events.emit("chargeProgress", 0);
+    this.events.emit("stationNearbyChange", next?.id ?? null);
   }
 
   private syncCharacterTransform() {

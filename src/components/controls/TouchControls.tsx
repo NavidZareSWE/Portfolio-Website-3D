@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   useEffect,
   useRef,
+  useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useExperience } from "@/components/experience/ExperienceContext";
@@ -12,7 +13,9 @@ import {
   selectGameStatus,
   selectIsCharging,
   selectIsOverlayOpen,
+  selectIsModalOpen,
   selectPromptCard,
+  selectStationPrompt,
 } from "@/store/selectors";
 import styles from "./TouchControls.module.css";
 
@@ -28,6 +31,9 @@ const RING_LENGTH = 2 * Math.PI * 34;
  * The two controls are labelled (MOVE / JUMP), and next to a card the action
  * button turns into the green HOLD button the prompt refers to, with a ring
  * that fills while it is held.
+ *
+ * Between them, a SPRINT toggle (amber, square, so it never reads as the
+ * jump button) latches the keyboard's Shift on or off.
  */
 export default function TouchControls() {
   const { t, i18n } = useTranslation("ui");
@@ -35,15 +41,24 @@ export default function TouchControls() {
   const status = useAppSelector(selectGameStatus);
   const overlayOpen = useAppSelector(selectIsOverlayOpen);
   const nearCard = useAppSelector(selectPromptCard) !== null;
+  const station = useAppSelector(selectStationPrompt);
+  const atStation = station !== null;
+  const modalOpen = useAppSelector(selectIsModalOpen);
   const charging = useAppSelector(selectIsCharging);
   const knobRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<SVGCircleElement>(null);
   const originRef = useRef<{ x: number; y: number; id: number } | null>(null);
-  const visible = status === "ready" && !overlayOpen;
+  const [sprint, setSprint] = useState(false);
+  const visible = status === "ready" && !overlayOpen && !modalOpen;
 
   useEffect(() => {
     if (!visible) experience?.input.setVirtualMove(0, 0);
   }, [visible, experience]);
+
+  // The toggle is a setting: re-applied to a rebuilt world (language switch).
+  useEffect(() => {
+    experience?.input.setVirtualSprint(sprint);
+  }, [experience, sprint]);
 
   // Hold progress goes straight to the ring (no React render per frame).
   useEffect(() => {
@@ -136,8 +151,39 @@ export default function TouchControls() {
       <div className={styles.control}>
         <button
           type="button"
-          className={`${styles.action} ${nearCard ? styles.ready : ""} ${charging ? styles.holding : ""}`}
-          aria-label={nearCard ? t("touch.openAria") : t("touch.action")}
+          className={`${styles.sprint} ${sprint ? styles.sprintOn : ""}`}
+          aria-pressed={sprint}
+          aria-label={t("touch.sprintAria")}
+          onClick={() => setSprint((on) => !on)}
+          onContextMenu={(event) => event.preventDefault()}
+        >
+          <span className={styles.sprintIcon} aria-hidden="true">
+            »
+          </span>
+          <span className={styles.sprintState} aria-hidden="true">
+            {sprint ? t("touch.sprintOn") : t("touch.sprintOff")}
+          </span>
+        </button>
+        <span
+          className={`${styles.caption} ${sprint ? styles.captionSprint : ""}`}
+          dir={i18n.dir()}
+          aria-hidden="true"
+        >
+          {t("touch.sprintLabel")}
+        </span>
+      </div>
+
+      <div className={styles.control}>
+        <button
+          type="button"
+          className={`${styles.action} ${nearCard || atStation ? styles.ready : ""} ${charging ? styles.holding : ""}`}
+          aria-label={
+            nearCard
+              ? t("touch.openAria")
+              : station
+                ? t("touch.stationAria", { name: t(`stations.${station}`) })
+                : t("touch.action")
+          }
           onPointerDown={(event) => {
             event.currentTarget.setPointerCapture(event.pointerId);
             experience?.input.setVirtualAction(true);
@@ -157,20 +203,20 @@ export default function TouchControls() {
             />
           </svg>
           <span className={styles.actionIcon} aria-hidden="true">
-            {nearCard ? "◉" : "▲"}
+            {nearCard || atStation ? "◉" : "▲"}
           </span>
         </button>
         <span
-          className={`${styles.caption} ${nearCard ? styles.captionReady : ""}`}
+          className={`${styles.caption} ${nearCard || atStation ? styles.captionReady : ""}`}
           dir={i18n.dir()}
           aria-hidden="true"
         >
-          {nearCard ? t("touch.openLabel") : t("touch.jumpLabel")}
+          {nearCard || atStation ? t("touch.openLabel") : t("touch.jumpLabel")}
         </span>
       </div>
 
       <p
-        className={`${styles.notice} ${nearCard ? styles.noticeHidden : ""}`}
+        className={`${styles.notice} ${nearCard || atStation ? styles.noticeHidden : ""}`}
         dir={i18n.dir()}
       >
         {t("touch.hint")}

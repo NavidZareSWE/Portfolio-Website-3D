@@ -15,11 +15,11 @@ import { HolographicCard, createSharedCardResources } from "./HolographicCard";
  * (exit radius 3.2 m) can never overlap.
  */
 export const CARD_LAYOUT: Record<SectionId, { right: number; up: number }> = {
-  about: { right: -16, up: 5 },
-  projects: { right: 0, up: 16 },
-  skills: { right: 16, up: 5 },
-  experience: { right: -15, up: -12 },
-  contact: { right: 15, up: -12 },
+  about: { right: -21, up: 6.5 },
+  projects: { right: 0, up: 21 },
+  skills: { right: 21, up: 6.5 },
+  experience: { right: -19.5, up: -15.5 },
+  contact: { right: 19.5, up: -15.5 },
 };
 
 export interface CardFaceAssets {
