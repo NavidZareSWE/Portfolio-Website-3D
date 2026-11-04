@@ -135,6 +135,7 @@ src/
                           glyph figures (GlyphFigure + poses), merged props (PropKit), vignettes/;
                           layout.ts (positions of the newer elements), districts.ts (floor patterns)
   three/play/             things to play with: pushable cubes, bugs
+  arcade/                 ROOT RUN: the 2D platformer on the arcade cabinet (game.ts, levels.ts)
 locales/{en,fa}/*.json   ALL copy, one file per i18next namespace
 scripts/dev.mjs           `npm run dev` wrapper (development-only --lod/--gpu/--net switches)
 scripts/i18n-push.mjs     `npm run i18n:push`: uploads edited locales/ JSON to i18nexus (skips ui)
@@ -321,7 +322,7 @@ In the CPU-only test browser here, at 1440×900, one frame at spawn went from ab
 | Per frame, start view (1280×800)                                                        | 67 draw calls (including the floor's field pass), about 92k triangles                                                                           |
 | Per frame, busiest view measured (Experience table with the About scenes also in frame) | 288 draw calls, about 214k triangles, measured before the résumé scenes, which add up to 16 calls and about 5k triangles where they are in view |
 
-The draw-call and triangle figures above were measured before the world additions of 2026-11-04 (district floors, horizon, firewall, bugs, cubes, terminal), which add draw calls where they are in view. Those additions were measured only relatively, in the same software-GPU test browser at a fixed 0.54 render scale (960×600, start view): about 15–16 frames per second before them and about 13–15 after, within run-to-run noise. Drawing the firewall as a full ring had cost about 30 % in that test, so it is drawn as a short arc that follows the player and only near the edge.
+The draw-call and triangle figures above were measured before the world additions of 2026-11-04 (district floors, horizon, firewall, bugs, cubes, terminal, and later the warehouse, stack tower, social portals and arcade cabinet), which add draw calls where they are in view. Those additions were measured only relatively, in the same software-GPU test browser at a fixed 0.54 render scale (960×600, start view): about 15–16 frames per second before them and about 13–15 after, within run-to-run noise. Drawing the firewall as a full ring had cost about 30 % in that test, so it is drawn as a short arc that follows the player and only near the edge.
 
 Frame rate was **not** measured on real hardware: the test browser here renders on a software GPU, so its numbers say nothing about real devices.
 
@@ -353,17 +354,20 @@ The maintenance pass on 2026-10-17 found the items below; the list was rechecked
   - `input/InputManager.ts`: `InputEvents`
   - `interaction/InteractionSystem.ts`: `InteractionCallbacks`
   - `quality/`: `MODEL_TIERS`, `DetailDecision`, `detectGpu`, `QualityProfile`
-  - `world/`: `GLYPH_MODEL_URL`, `REST_POSE`, `SolidOptions`, `ImageOptions`, `FACE_CAMERA_PITCH`, `MASK_URLS`, `SIT_LIFT`
-- `src/types/index.ts`: `SECTION_IDS`
+  - `world/`: `GLYPH_MODEL_URL`, `REST_POSE`, `SolidOptions`, `ImageOptions`, `MASK_URLS`, `SIT_LIFT`; in `districts.ts` `cellCenter`, `GraphCommitKind`, `GraphRow`, `GitGraph`, `BlueprintSpots`; in `canvasText.ts` `LegibleTextOptions`, `OUTLINE_COLOR`; `WAREHOUSE_PACKAGES` (`vignettes/PackageWarehouse.ts`) and `TERMINAL_RADIUS` (`vignettes/TerminalStation.ts`)
+- `src/arcade/game.ts`: `drawBattery`
+- `src/types/index.ts`: `STATION_IDS`
 
 **Files and content:**
 
 - **Icons:** `public/icons/envelope-at-fill.svg` and `location.svg` are not referenced by the code or the locale files (`envelope-at.svg`, `github.svg`, `linkedin.svg` and `telegram.svg` are now used by the social portals).
 - **Locale keys in `ui`:** `hud.language`, `touch.stick`, `about.downloadCv`, `contact.channels`, `contact.location`, `contact.openMap`, `language.en` and `language.fa`.
 - **Locale keys in shared namespaces:** `common` has `country`, `lastName`, `navbar.back` and `pronoun`; `contactus` has `contactus.contactUs`. These two namespaces are shared with the main site's i18nexus project, so `npm run i18n:pull` would bring the keys back.
-- **CSS variables:** `--cyan-soft`, `--deep` and `--amber` are set by `themeCssVariables()`, but no stylesheet reads them. Their theme tokens are used in WebGL.
+- **CSS variables:** `--cyan-soft` and `--deep` are set by `themeCssVariables()`, but no stylesheet reads them. Their theme tokens are used in WebGL.
 
 **Overlapping helpers, kept separate on purpose** (they behave differently):
 
 - Touch detection: `useIsTouchOnly` (`hooks/useMediaQuery.ts`) and `isTouchDevice` (`three/quality/ModelDetail.ts`).
-- Persian-script and direction checks: `PERSIAN_SCRIPT` (`Vignette.ts`), `SCRIPT_RUN` (`WASDGuide.tsx`) and `isTextDirectionRTL` (`i18n/`).
+- Persian-script and direction checks: `PERSIAN_SCRIPT` (`Vignette.ts`, also used by `FloorLabel.ts`), `SCRIPT_RUN` (`WASDGuide.tsx`) and `isTextDirectionRTL` (`i18n/`).
+- Rounded rectangles on canvas: `roundedRect` (`three/world/canvasText.ts`, quadratic corners) and the local helper inside `drawBattery` (`arcade/game.ts`, arc corners). They draw slightly different corners.
+- The "held Space from the opening press" guards in `PortfolioOverlay.tsx`, `Terminal.tsx` and `Arcade.tsx`: the overlay lets Space through in form fields, the terminal and the arcade swallow its repeats everywhere.

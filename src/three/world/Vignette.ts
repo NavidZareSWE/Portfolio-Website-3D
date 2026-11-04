@@ -309,7 +309,7 @@ export function createShadowMaterial(): MeshBasicMaterial {
  * (fixed) camera: signs, "CALLING…" and similar labels. `setText` redraws
  * only when the text actually changes.
  */
-const PERSIAN_SCRIPT = /[\u0600-\u06FF]/;
+export const PERSIAN_SCRIPT = /[\u0600-\u06FF]/;
 
 /**
  * Canvas pixels per metre for world text. High enough that signs stay sharp

@@ -110,7 +110,7 @@ export class SocialPortals extends Vignette {
     const half = PORTAL.width / 2;
 
     for (const spot of CONTACT_EXTRAS.portals) {
-      const id = spot.id as PortalId;
+      const id: PortalId = spot.id;
       const style = PORTAL_STYLE[id];
       const x = spot.right;
       const z = -spot.up;

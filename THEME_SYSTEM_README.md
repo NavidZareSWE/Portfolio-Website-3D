@@ -62,6 +62,7 @@ The fog _colour_ comes from `THEME.bg`. The fog _distances_ are separate constan
 
 ## Limitations
 
+- **Game-only colours.** ROOT RUN's battery bars (`BAR_COLORS` in `src/arcade/game.ts`) use the theme's alert, amber and green plus two literals that the theme does not have: orange `#ff8a3d` and lime `#a8f04a`.
 - **Literal colour values.** About 30 CSS declarations across the UI modules and `globals.css` write the cyan or line colour as literal `rgba(95, 240, 255, …)` values, with varying alpha, instead of using a token. Changing `THEME.cyan` does not update them. The same applies to the gradient stops in `Holo.module.css`.
 - **Unused mappings.** `--cyan-soft` and `--deep` are mapped to CSS but no stylesheet reads them at present. Both tokens are used in WebGL.
 - **Fixed after creation.** WebGL colours are set when materials are created, so changing a token at runtime would not update the world without rebuilding it.

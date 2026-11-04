@@ -9,7 +9,7 @@ import {
 import { MONO_FONT_FAMILY } from "../effects/AsciiAtlas";
 import { CRISP_LAYER } from "../render/CrispComposite";
 import { drawLegibleText, roundedRect } from "./canvasText";
-import { FACE_CAMERA_PITCH } from "./Vignette";
+import { FACE_CAMERA_PITCH, PERSIAN_SCRIPT } from "./Vignette";
 
 /** One coloured piece of a label line. */
 export interface LabelRun {
@@ -20,7 +20,6 @@ export interface LabelRun {
   bold?: boolean;
 }
 
-const PERSIAN_SCRIPT = /[؀-ۿ]/;
 /**
  * Canvas pixels per metre. The label is stretched by FORESHORTENING along
  * its height, so this is about 160 px per metre on screen-facing axes: sharp
