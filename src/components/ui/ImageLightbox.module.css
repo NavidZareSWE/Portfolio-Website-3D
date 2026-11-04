@@ -512,6 +512,19 @@
   stroke-linecap: square;
 }
 
+/* Persian counter: text digits styled to match the lit segments. The mono
+   stack falls back to Vazirmatn for Persian digits. */
+.textNumber {
+  display: inline-block;
+  height: 24px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+  text-shadow: 0 0 4px rgba(95, 240, 255, 0.5);
+}
+
 .readoutDivider {
   align-self: center;
   margin: 0 1px;

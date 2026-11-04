@@ -85,6 +85,16 @@ function SegmentDigit({ value }: { value: number }) {
   );
 }
 
+const PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+
+/** Zero-padded to two digits; Persian (Extended Arabic-Indic) digits for fa. */
+function formatCounter(value: number, isPersian: boolean) {
+  const padded = String(value).padStart(2, "0");
+  return isPersian
+    ? padded.replace(/\d/g, (digit) => PERSIAN_DIGITS[Number(digit)])
+    : padded;
+}
+
 function SegmentNumber({ value }: { value: number }) {
   const digits = String(value).padStart(2, "0");
 
@@ -113,7 +123,10 @@ export default function ImageLightbox({
   title,
   onClose,
 }: ImageLightboxProps) {
-  const { t } = useTranslation("ui");
+  const { t, i18n } = useTranslation("ui");
+  // Seven-segment glyphs can only draw Western digits, so Persian shows the
+  // counter as text in Persian digits instead.
+  const isPersian = i18n.language === "fa";
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const onCloseRef = useRef(onClose);
@@ -433,21 +446,41 @@ export default function ImageLightbox({
             <span className={styles.srOnly}>
               Image {displayedIndex} of {images.length}
             </span>
-            <span
-              className={styles.readoutDigits}
-              key={activeIndex}
-              aria-hidden="true"
-            >
-              <SegmentNumber value={activeIndex + 1} />
-              <span className={styles.readoutDivider}>/</span>
-              <SegmentNumber value={images.length} />
-            </span>
+            {isPersian ? (
+              // RTL: the current image sits on the right, read first.
+              <span
+                className={styles.readoutDigits}
+                key={activeIndex}
+                aria-hidden="true"
+                dir="rtl"
+              >
+                <span className={styles.textNumber}>
+                  {formatCounter(displayedIndex, true)}
+                </span>
+                <span className={styles.readoutDivider}>/</span>
+                <span className={styles.textNumber}>
+                  {formatCounter(images.length, true)}
+                </span>
+              </span>
+            ) : (
+              // Pinned LTR so an RTL ancestor can never flip the digit order.
+              <span
+                className={styles.readoutDigits}
+                key={activeIndex}
+                aria-hidden="true"
+                dir="ltr"
+              >
+                <SegmentNumber value={activeIndex + 1} />
+                <span className={styles.readoutDivider}>/</span>
+                <SegmentNumber value={images.length} />
+              </span>
+            )}
           </div>
           <span
             className={`${styles.footerMeta} ${styles.footerMetaEnd}`}
             aria-hidden="true"
           >
-            {String(displayedIndex).padStart(2, "0")} // FRAME INDEX
+            {formatCounter(displayedIndex, isPersian)} // FRAME INDEX
           </span>
         </div>
       </div>
